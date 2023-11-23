@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd">
+	
+<!-- 	<context:component-scan base-package="kr.or.ddit"> -->
+<!-- 		<context:include-filter type="annotation" expression="org.springframework.stereotype.Service"/> -->
+<!-- 		<context:include-filter type="annotation" expression="org.springframework.stereotype.Repository"/> -->
+<!-- 		<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/> -->
+<!-- 	</context:component-scan> -->
+	
+	<!-- Root Context: defines shared resources visible to all other web components -->
+	 <bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource" destroy-method="close">
+	 	<property name="driverClassName" value="net.sf.log4jdbc.sql.jdbcapi.DriverSpy"/>
+	 	<property name="url" value="jdbc:log4jdbc:oracle:thin:@112.220.114.130:1521:xe"/>
+<!-- 	 	<property name="driverClassName" value="oracle.jdbc.driver.OracleDriver"/> -->
+<!-- 	 	<property name="url" value="jdbc:oracle:thin:@112.220.114.130:1521:xe"/> -->
+	 	<property name="username" value="team4_202304F"/>
+	 	<property name="password" value="java"/>
+	 	<property name="initialSize" value="2"/>
+		<property name="maxTotal" value="3"/>
+		<property name="maxWaitMillis" value="2000"/>
+	 </bean>	
+	 <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+	 	<property name="dataSource" ref="dataSource"/>
+	 	<property name="mapperLocations" value="classpath:/sqlmap/**/*_SQL.xml"/>
+	 	<property name="configLocation" value="/WEB-INF/mybatisAlias/mybatisAlias.xml"/>
+	 </bean>
+	 <bean id="sqlSessionTemplate" class="org.mybatis.spring.SqlSessionTemplate">
+	 	<constructor-arg name="sqlSessionFactory" index="0" ref="sqlSessionFactory"/>
+	 </bean>
+	 <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+	 	<property name="basePackage" value="kr.or.ddit.mapper"/> 
+	 </bean>
+	 <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+	 	<property name="maxUploadSize" value="3145728"/>
+	 	<property name="maxInMemorySize" value="3145728"/>
+	 	<property name="defaultEncoding" value="UTF-8"/>
+	 </bean>
+	 <bean id="uploadPath" class="java.lang.String">
+	 	<constructor-arg value="D:\99.JSP_SPRING\02.SPRING2\workspace_spring2\.metadata\.plugins\org.eclipse.wst.server.core\tmp2\wtpwebapps\WSIProject\resources\notice"/>
+	 </bean>
+	 <bean id="YuploadPath" class="java.lang.String">
+	 	<constructor-arg value="D:\99.JSP_SPRING\02.SPRING2\Yoong\workspace_spring2\.metadata\.plugins\org.eclipse.wst.server.core\tmp2\wtpwebapps\WSIProject\resources\notice"/>
+	 </bean>
+	 <bean id="SLoadPath" class="java.lang.String">
+	 	<constructor-arg value="D:\JSP_SPRING\02.SPRING2\workspace_spring2\.metadata\.plugins\org.eclipse.wst.server.core\tmp0\wtpwebapps\WSIProject\resources"/>
+	 </bean>
+	 
+	 <!-- Root Context: defines shared resources visible to all other web components -->
+    <bean id="mailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+        <property name="host" value="smtp.gmail.com" />
+        <property name="port" value="587" />    
+        <property name="username" value="cjsdyd8911@gmail.com" />
+        <property name="password" value="poca wyyw qrog nyeg" />
+        <property name="defaultEncoding" value="utf-8" />
+        
+        <property name="javaMailProperties">
+            <props>
+                <prop key="mail.smtp.transport.protocol">SMTP</prop>
+                <prop key="mail.smtp.starttls.enable">true</prop>
+                <prop key="mail.smtp.ssl.protocols">TLSv1.2</prop>
+                <prop key="mail.smtp.auth">true</prop>
+<!--                 <prop key="mail.smtps.ssl.checkserveridentity">true</prop> -->
+<!--                 <prop key="mail.smtps.ssl.trust">*</prop> -->
+                <prop key="mail.debug">true</prop>
+<!--                 <prop key="mail.smtp.socketFactory.class">javax.net.ssl.SSLSocketFactory</prop> -->
+            </props>
+        </property>
+    </bean>
+    
+</beans>

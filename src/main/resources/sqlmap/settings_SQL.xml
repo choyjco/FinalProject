@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.settings.SettingMapper">
+
+	<select id="vacCheck" parameterType="string" resultType="settingsVO">
+		select
+			vac_name
+		from vac
+		where vac_name = #{vacName}
+	</select>
+	
+	<select id="vacList" resultType="settingsVO">
+		select
+		vac_code, vac_name, vac_cont, vac_amt, vac_gen, vac_wg_pay, vac_cert
+		from vac
+	</select>
+
+	<select id="selectCus" parameterType="string" resultType="settingsVO">
+		select cus.cus_rnum, cus.cus_com, cus.cus_name,
+			(select attach.file_savepath from attach where cus.cus_logo = attach.file_no) cus_logo,
+		    (select attach.file_savepath from attach where cus.cus_image = attach.file_no) cus_image, 
+		    (select attach.file_savepath from attach where cus.cus_signature = attach.file_no) cus_signature, cus.cus_zip,
+			cus_addr, cus_addr2, cus_tel, cus_emp, cus_email, cus_birth
+		from customer cus
+		where cus.cus_rnum = #{cusRnum}
+	</select>
+	
+	<update id="updateCus" parameterType="settingsVO">
+		update 	customer
+		set 
+			<if test="cusLogo !=  null and cusLogo != ''">
+				cus_logo = #{cusLogo},
+			</if>
+			<if test="cusImage !=  null and cusImage != ''">
+				cus_image = #{cusImage},
+			</if>
+			<if test="cusSignature !=  null and cusSignature != ''">
+				cus_signature = #{cusSignature},
+			</if>
+				cus_emp	= #{cusEmp}
+		where cus_rnum = #{cusRnum}
+	</update>
+	
+	<insert id="insertCompFile" parameterType="attachVO">
+		<selectKey keyProperty="fileNo" resultType="string" order="BEFORE">
+			select seq_attach.nextval from dual
+		</selectKey>
+		insert into attach(
+			file_no, file_savepath, file_name, file_orgname, file_size, file_mime, 
+			file_downcount, file_regdate, file_uploader, file_code
+		)values(
+			#{fileNo}, #{fileSavepath}, #{fileName}, #{fileOrgname}, #{fileSize}, #{fileMime}, 
+			0, sysdate, #{fileUploader}, #{fileCode}
+		)
+	</insert>
+	
+<!-- 	<delete id="delCusFile" parameterType="attachVO"> -->
+<!-- 	</delete> -->
+	
+	<insert id="registerVac" parameterType="settingsVO" useGeneratedKeys="true">
+		<selectKey keyProperty="vacCode" resultType="string" order="BEFORE">
+			select seq_vac_set.nextval from dual
+		</selectKey>
+		insert into vac(
+			vac_code, vac_name, vac_cont, vac_amt, vac_gen, vac_wg_pay, vac_cert
+		)values(
+		#{vacCode}, #{vacName}, #{vacCont}, #{vacAmt}, #{vacGen}, #{vacWgPay}, #{vacCert}
+		)
+	</insert>
+	
+	<delete id="deleteVac" parameterType="string">
+		delete from vac
+		where vac_code = #{vacCode}
+	</delete>
+	
+	<select id="empList" resultType="settingsVO">
+		select
+			e.emp_no , emp_name, emp_role
+			, (select com_name from common where com_code = emp_dept) emp_dept
+		FROM emp e, emp_auth a where e.emp_no = a.emp_no order by emp_name
+	</select>
+		
+	<update id="empModifyAuth" parameterType="settingsVO">
+		update  emp_auth
+		set		emp_role = #{empRole}
+		where   1=1
+		and		emp_no = #{empNo}
+	</update>
+	
+	<select id="deptList" resultType="TreeVO">
+		select
+			com_code as id, nvl(to_char(com_parent), '#') as parent, com_name, icon
+		from common
+		where com_upcode = 'a'
+	</select>
+	
+	<select id="searchList" parameterType="TreeVO" resultType="TreeVO">
+		select com_name from common where com_name like '%'||#{searchWord}||'%' and com_upcode = 'a'
+	</select>
+	
+	<select id="posList" resultType="TreeVO">
+		SELECT 
+			com_code as id, NVL(to_char(com_parent), '#') as parent, com_name as text, icon
+		FROM common
+		WHERE 1=1
+		AND COM_UPCODE = 'b'
+	</select>
+
+	<select id="rankList" resultType="TreeVO">
+		SELECT 
+			com_code as id, NVL(to_char(com_parent), '#') as parent, com_name as text, icon
+		FROM common
+		WHERE 1=1
+		AND COM_UPCODE = 'c'
+	</select>
+
+	<select id="jobList" resultType="TreeVO">
+		SELECT 
+			com_code as id, NVL(to_char(com_parent), '#') as parent, com_name as text, icon
+		FROM common
+		WHERE 1=1
+		AND COM_UPCODE = 'd'
+	</select>
+		
+	<insert id="insertEmp" parameterType="EmpVO">
+		INSERT INTO emp (
+		    emp_no
+		    , emp_name
+		    , emp_ename
+		    , emp_gen
+		    , emp_reg1
+		    , emp_reg2
+		    , emp_tel
+		    , emp_addr1
+		    , emp_addr2
+		    , emp_email
+		    , emp_date
+		    , emp_stat
+		    , emp_work
+		    , emp_acct
+		    , emp_bank
+		) VALUES (
+		    #{empNo}
+			, #{empName}
+			, #{empEname}
+			, #{empGen}
+			, #{empReg1}
+			, #{empReg2}
+			, #{empTel}
+			, #{empAddr1}
+			, #{empAddr2}
+			, #{empEmail}
+			, #{empDate}
+			, #{empStat}
+			, #{empWork}
+			, #{empAcct}
+			, #{empBank}
+		)
+	</insert>
+	
+	<select id="empMemList" resultType="settingsVO">
+		select
+		    e.emp_no , emp_name, emp_role
+		    , (select com_name from common where com_code = emp_dept) emp_dept
+		FROM emp e, emp_auth a where e.emp_no = a.emp_no and emp_role = 'ROLE_MEMBER' order by emp_name
+	</select>
+	
+	<select id="empManList" resultType="settingsVO">
+		select
+		    e.emp_no , emp_name, emp_role
+		    , (select com_name from common where com_code = emp_dept) emp_dept
+		FROM emp e, emp_auth a where e.emp_no = a.emp_no and emp_role = 'ROLE_MANAGER' order by emp_name
+	</select>
+	
+	<select id="empAdmList" resultType="settingsVO">
+		select
+		    e.emp_no , emp_name, emp_role
+		    , (select com_name from common where com_code = emp_dept) emp_dept
+		FROM emp e, emp_auth a where e.emp_no = a.emp_no and emp_role = 'ROLE_ADMIN' order by emp_name
+	</select>
+	
+	<select id="roleList" resultType="settingsVO">
+		select distinct
+			emp_role
+		FROM emp_auth
+	    where emp_role != 'ROLE_TEST'
+	</select>
+	
+	<update id="registerRole" parameterType="settingsVO">
+		update emp_auth set emp_role = #{empRole} where emp_no = #{empNo}
+	</update>
+	
+	<select id="empNoList" resultType="settingsVO">
+		select emp_no from emp where emp_dept = (select com_code from common where com_name = #{empDept})
+	</select>
+	
+	
+	<update id="initTree">
+		update common set com_upcode = 'x' where com_upcode = 'a' and com_code != 'a'
+	</update>
+	
+	<update id="rollbackTree">
+		update common set com_upcode = 'a' where com_upcode = 'x'
+	</update>
+	
+	<update id="treeUpdate" parameterType="TreeVO" >
+		MERGE 
+		 INTO common a
+		USING dual b
+		   ON (a.com_code = #{id})
+		 WHEN MATCHED THEN
+		      UPDATE SET 
+		    <if test='parent !=  "a"'>
+				a.icon = 'jstree-themeicon bx bx-user' ,
+			</if>
+		    <if test='parent == "a"'>
+				a.icon = 'jstree-themeicon bx bx-user text-info' ,
+			</if>
+				a.com_name = #{text} , 
+			    a.com_upcode ='a' , 
+			    a.com_parent = #{parent} 
+		 WHEN NOT MATCHED THEN
+		      INSERT (
+		      		a.com_code,
+					a.icon,
+				    a.com_name,
+				    a.com_upcode,
+				    a.com_parent
+			    ) VALUES (
+			    	#{id},
+			    <if test='parent !=  "a"'>
+					'jstree-themeicon bx bx-user' ,
+				</if>
+			    <if test='parent == "a"'>
+					'jstree-themeicon bx bx-user text-info' ,
+				</if>
+				    #{text},
+				    'a',
+				    #{parent} 
+				)
+	</update>
+</mapper>

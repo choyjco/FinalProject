@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.mypage.MyPageMapper">
+
+
+	<select id="selectEmpOne" parameterType="empVO" resultType="empVO">
+		select 
+			emp_no, emp_pw, emp_name, emp_ename, emp_gen, emp_reg1, emp_reg2,
+			emp_tel, emp_addr1, emp_addr2, emp_email, emp_date, emp_stat,
+			emp_work, emp_acct, emp_bank, emp_profile, emp_signature, emp_dept,
+			emp_pos, emp_rank, emp_job, emp_ffile
+		from emp
+		where 
+			emp_no = #{empNo}
+	</select>
+
+   <select id="detail" parameterType="empVO" resultType="infoVO">
+      SELECT
+    	emp_no, emp_pw, emp_name, emp_ename, emp_gen, emp_reg1, emp_reg2, emp_tel, emp_addr1, emp_addr2
+  		, emp_email, emp_date, emp_stat, emp_work, emp_acct, emp_bank, (select attach.file_savepath from attach, emp where emp.emp_profile = attach.file_no and emp.emp_no = #{empNo}) emp_profile, emp_signature
+  		, (select com_name from common where com_code = emp_dept) emp_dept 
+  		, (select com_name from common where com_code = emp_pos) emp_pos
+  		, (select com_name from common where com_code = emp_rank) emp_rank 
+  		, (select com_name from common where com_code = emp_job) emp_job
+  		, emp_ffile
+	FROM emp
+    where emp_no = #{empNo}
+   </select>
+   
+   <select id="famDetail" parameterType="empVO" resultType="familyVO">
+      select 
+         ef_no, emp_no, ef_relation, ef_name, ef_phone, ef_reg1, ef_reg2
+      from emp_family
+      where emp_no = #{empNo}
+   </select>
+   
+   <select id="acadDetail" parameterType="empVO" resultType="acadVO">
+      select
+          acad_no, emp_no, acad_clf, acad_name, acad_ent_date, acad_end_date,
+          acad_stat, acad_maj
+      from acad
+      where emp_no = #{empNo}    
+   </select>
+
+
+   <select id="carrDetail" parameterType="empVO" resultType="careerVO">
+      select
+          ca_no, emp_no, ca_com_name, ca_clf, ca_type, ca_ent_date,
+          ca_end_date, ca_dept, ca_dut, ca_pos
+      from career
+      where emp_no = #{empNo}
+   </select>
+   
+   <update id="acadModify" parameterType="acadVO">
+      
+      update acad
+      set
+         acad_clf = #{acadClf},
+         acad_name = #{acadName},
+         acad_ent_date = #{acadEntDate},
+         acad_end_date = #{acadEndDate},
+         acad_stat = #{acadStat},
+         acad_maj = #{acadMaj}
+      where emp_no = #{empNo}
+      and acad_no = #{acadNo}
+   </update>
+   
+   <select id="acadSelect" parameterType="acadVO" resultType="acadVO">
+      
+      select
+         acad_clf, acad_name, acad_ent_date, acad_end_date,
+          acad_stat, acad_maj
+       from acad
+       where acad_no = #{acadNo}
+   
+   </select>
+   
+   <update id="carrModify" parameterType="careerVO">
+   
+      update career
+      set
+         ca_com_name = #{caComName}, 
+         ca_clf = #{caClf}, 
+         ca_type = #{caType}, 
+         ca_ent_date = #{caEntDate}, 
+         ca_end_date = #{caEndDate}, 
+         ca_dept = #{caDept}, 
+         ca_dut = #{caDut}, 
+         ca_pos = #{caPos}
+      where   
+         ca_no = #{caNo} 
+      and emp_no = #{empNo} 
+   </update>
+   
+   <select id="carrSelect" parameterType="careerVO" resultType="careerVO">
+      select
+         ca_com_name, ca_clf, ca_type, ca_ent_date,
+          ca_end_date, ca_dept, ca_dut, ca_pos
+       from career
+       where
+          ca_no = #{caNo}
+       and emp_no = #{empNo}
+   </select>
+   
+   <update id="famModify" parameterType="familyVO">
+   
+      update emp_family
+      set
+         ef_relation = #{efRelation}, 
+         ef_name = #{efName}, 
+         ef_phone = #{efPhone},
+         ef_reg1 = #{efReg1},
+         ef_reg2 = #{efReg2}
+      where ef_no = #{efNo}
+      and emp_no = #{empNo}
+   </update>
+   
+   <select id="famSelect" parameterType="familyVO" resultType="familyVO">
+      select
+         ef_relation, ef_name, ef_phone, ef_reg1, ef_reg2
+      from emp_family
+      where emp_no = #{empNo}
+      and ef_no = #{efNo}
+   </select>
+   
+   <delete id="famDelete" parameterType="string">
+      delete from emp_family
+      where ef_no = #{efNo}
+   </delete>
+   
+   <delete id="acadDelete" parameterType="string">
+      delete from acad
+      where acad_no = #{acadNo}
+   </delete>
+   
+   <delete id="carrDelete" parameterType="string">
+      delete from career
+      where ca_no = #{caNo}
+   </delete>
+   
+   <select id="efNoSelect" parameterType="familyVO" resultType="string">
+      select 
+         ef_no 
+      from emp_family
+      where emp_no = #{empNo}
+      and ef_name = #{efName}
+      and ef_reg1 = #{efReg1}
+      and ef_reg2 = #{efReg2}
+   </select>
+   
+   <insert id="famRegister" parameterType="familyVO" useGeneratedKeys="true">
+      <selectKey keyProperty="efNo" resultType="string" order="BEFORE">
+         select seq_family.nextval from dual
+      </selectKey>
+      insert into
+         emp_family(
+            ef_no, emp_no, ef_relation, ef_name, ef_phone, ef_reg1, ef_reg2
+         )
+         values(
+            'fam'||to_char(#{efNo}),#{empNo}, #{efRelation}, #{efName}, #{efPhone}, #{efReg1}, #{efReg2}
+         )
+   </insert>
+   
+   <insert id="acadRegister" parameterType="acadVO" useGeneratedKeys="true" >
+      <selectKey keyProperty="acadNo" resultType="string" order="BEFORE">
+         select seq_acad.nextval from dual
+      </selectKey>
+      insert into
+         acad(
+            acad_no, emp_no, acad_clf, acad_name, acad_ent_date, acad_end_date, acad_stat, acad_maj
+         )
+         values(
+            'acad'||to_char(#{acadNo}),#{empNo},#{acadClf},#{acadName},#{acadEntDate},#{acadEndDate},#{acadStat},#{acadMaj}
+         )
+         
+   </insert>
+   
+   <insert id="carrRegister" parameterType="careerVO" useGeneratedKeys="true" >
+      <selectKey keyProperty="caNo" resultType="string" order="BEFORE">
+         select seq_career.nextval from dual
+      </selectKey>
+      insert into
+         career(
+            ca_no, emp_no, ca_com_name, ca_clf, ca_type, ca_ent_date, ca_end_date, ca_dept, ca_dut, ca_pos
+         )
+         values(
+            'carr'||to_char(#{caNo}),#{empNo},#{caComName},#{caClf},#{caType},#{caEntDate},#{caEndDate},#{caDept},#{caDut},#{caPos}
+         )
+         
+   </insert>
+   
+   <select id="acadNoSelect" parameterType="acadVO" resultType="string">
+      select
+         acad_no
+      from acad
+      where emp_no = #{empNo}
+      and acad_clf = #{acadClf}
+      and acad_name = #{acadName}
+      and acad_maj = #{acadMaj}
+   </select>
+   
+   <select id="caNoSelect" parameterType="careerVO" resultType="string">
+   
+      select
+         ca_no
+      from career
+      where emp_no = #{empNo}
+      and ca_com_name = #{caComName}
+      and ca_clf = #{caClf}
+      and ca_type = #{caType}
+   </select>
+   
+   
+   
+   
+   <select id="selectEmpProfileOne" parameterType="string" resultType="empVO">
+		select 
+			emp_no, emp_pw, emp_name, emp_ename, emp_gen, emp_reg1, emp_reg2,
+			emp_tel, emp_addr1, emp_addr2, emp_email, emp_date, emp_stat,
+			emp_work, emp_acct, emp_bank, emp_profile, emp_signature, emp_dept,
+			emp_pos, emp_rank, emp_job, emp_ffile
+		from emp
+		where 
+			emp_no = #{empNo}
+	</select>
+	
+	<select id="selectAttachOne" parameterType="string" resultType="attachVO">
+		select *
+		from attach
+		where 
+			file_no = #{emp_profile}
+	</select>
+   
+   
+   <update id="updateDeleteConf" parameterType="attachVO">
+   		update attach
+   			set 
+   			file_del_conf = 'Y', 
+   			file_del_date = sysdate
+   		where file_no = #{fileNo}
+   </update>
+   
+   
+   
+   <update id="updateProfile" parameterType="empVO">
+		update emp
+		set
+			<if test="empProfile !=  null and empProfile != ''">
+				emp_profile = #{empProfile},
+			</if>
+		where emp_profile = #{empProfile}
+	</update>
+	
+	<insert id="insertProfile" parameterType="attachVO">
+		<selectKey keyProperty="fileNo" resultType="string" order="BEFORE">
+			select seq_attach.nextval from dual
+		</selectKey>
+		insert into attach(
+			file_no, file_savepath, file_name, file_orgname, file_size, file_mime, 
+			file_downcount, file_regdate, file_uploader, file_code
+		)values(
+			#{fileNo}, #{fileSavepath}, #{fileName}, #{fileOrgname}, #{fileSize}, #{fileMime}, 
+			0, sysdate, #{fileUploader}, #{fileCode}
+		)
+	</insert>
+	
+   <update id="updateEmpProfile" parameterType="empVO">
+   		<selectKey keyProperty="fileNo" resultType="string" order="BEFORE">
+   			select seq_attach.currval from dual
+   		</selectKey>
+   		update emp
+   			set
+   				emp_profile = #{fileNo}
+   			where emp_no = #{empNo}
+   </update>
+</mapper>

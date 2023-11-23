@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.hr.TreeMapper">
+
+	<select id="treeList" resultType="TreeVO">
+		SELECT 
+			com_code as id, NVL(a.count, '0') as empCount, NVL(to_char(com_parent), '#') as parent, com_name as text, icon
+		FROM common
+        LEFT OUTER JOIN (
+            select
+                emp_dept, count(emp_dept) as count
+            from emp
+            where NOT emp_stat = '퇴직완료'
+            group by emp_dept
+        ) a ON (emp_dept = com_code) 
+		WHERE 1=1
+		AND COM_UPCODE = 'a'
+	</select>
+
+	<select id="treeList2" resultType="TreeVO">
+		SELECT 
+			com_code as id, NVL(to_char(com_parent), '#') as parent, com_name as text, icon
+		FROM common
+		WHERE 1=1
+		AND COM_UPCODE = 'a'
+	</select>
+	
+	<select id="posList" resultType="TreeVO">
+		SELECT 
+			com_code as id, NVL(to_char(com_parent), '#') as parent, com_name as text, icon
+		FROM common
+		WHERE 1=1
+		AND COM_UPCODE = 'b'
+	</select>
+	
+	<select id="rankList" resultType="TreeVO">
+		SELECT 
+			com_code as id, NVL(to_char(com_parent), '#') as parent, com_name as text, icon
+		FROM common
+		WHERE 1=1
+		AND COM_UPCODE = 'c'
+	</select>
+
+	<select id="jobList" resultType="TreeVO">
+		SELECT 
+			com_code as id, NVL(to_char(com_parent), '#') as parent, com_name as text, icon
+		FROM common
+		WHERE 1=1
+		AND COM_UPCODE = 'd'
+	</select>
+	
+</mapper>

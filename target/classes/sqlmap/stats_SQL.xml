@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.stats.StatsMapper">
+
+	<select id="selectGenderRate" resultType="statsVO">
+		SELECT emp_gen,
+		     COUNT(*) AS gen_cnt,
+		     ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) OVER ()) AS gen_ratio
+		FROM emp
+		GROUP BY emp_gen
+		ORDER BY emp_gen
+	</select>
+
+	<select id="selectRecruitYear" resultType="statsVO">
+		SELECT TO_CHAR(e.emp_date, 'YYYY') AS year,
+		       SUM(CASE WHEN r.rec_type = '경력' THEN subquery.cnt ELSE 0 END) as car_cnt,
+		       SUM(CASE WHEN r.rec_type = '신입' THEN subquery.cnt ELSE 0 END) as new_cnt,
+		       SUM(subquery.cnt) as total_cnt
+		FROM emp e
+		LEFT OUTER JOIN rec_info r ON e.rec_code = r.rec_code
+		JOIN (
+		    SELECT emp_no, COUNT(*) as cnt, emp_date
+		    FROM emp
+		    <![CDATA[
+		    WHERE emp_date >= DATE '2012-01-01' AND emp_date <= sysdate
+		    ]]>
+		    GROUP BY emp_no, emp_date
+		) subquery ON e.emp_no = subquery.emp_no
+		GROUP BY TO_CHAR(e.emp_date, 'YYYY')
+		ORDER BY year
+	</select>
+	
+	<select id="selectWorkInfo" resultType="statsVO">
+		SELECT e.emp_no, SUM(wi.work_total) AS total_work
+		FROM emp e
+		LEFT OUTER JOIN work_info wi ON e.emp_no = wi.emp_no
+		<![CDATA[
+		WHERE work_stime >= '2023-10-30' AND work_stime <= '2023-11-05'
+		]]>
+		AND e.emp_no = '199404001'
+		GROUP BY e.emp_no
+	</select>
+</mapper>

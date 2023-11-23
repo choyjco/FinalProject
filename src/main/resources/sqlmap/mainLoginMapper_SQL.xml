@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.main.MainLoginMapper">
+
+	<resultMap type="customerVO" id="customerMap">
+		<id property="cusRnum" column="cus_rnum"/>
+		<result property="cusRnum" column="cus_rnum"/>
+		<result property="cusPw" column="cus_pw"/>
+		<result property="cusCom" column="cus_com"/>
+		<result property="cusName" column="cus_name"/>
+		<result property="cusLogo" column="cus_logo"/>
+		<result property="cusAddr" column="cus_addr"/>
+		<result property="cusAddr2" column="cus_addr2"/>
+		<result property="cusZip" column="cus_zip"/>
+		<result property="cusTel" column="cus_tel"/>
+		<result property="cusEmp" column="cus_emp"/>
+		<result property="cusEmail" column="cus_email"/>
+		<result property="cusBirth" column="cus_birth"/>
+		<result property="cusImage" column="cus_image"/>
+		<result property="cusSignature" column="cus_signature"/>
+		<collection property="attachVO" resultMap="attachMap"/>
+	</resultMap>
+	
+	<resultMap type="attachVO" id="attachMap">
+		<id property="fileNo" column="file_no"/>
+		<result property="fileNo" column="file_no"/>
+		<result property="fileSavepath" column="file_savepath"/>
+		<result property="fileName" column="file_name"/>
+		<result property="fileOrgname" column="file_orgname"/>
+		<result property="fileSize" column="file_size"/>
+		<result property="fileMime" column="file_mime"/>
+		<result property="fileDowncount" column="file_downcount"/>
+		<result property="fileRegdate" column="file_regdate"/>
+		<result property="fileUploader" column="file_uploader"/>
+		<result property="fileDelConf" column="file_del_conf"/>
+		<result property="fileDelDate" column="file_del_date"/>
+		<result property="fileCode" column="file_code"/>
+	</resultMap>
+
+	<insert id="register" parameterType="customerVO">
+		insert into customer(
+			cus_rnum, cus_pw, cus_com, cus_name, cus_addr, cus_addr2, cus_zip,
+			cus_tel, cus_emp, cus_email, cus_birth, cus_logo, cus_image, cus_signature
+		)values(
+			#{cusRnum}, #{cusPw}, #{cusCom}, #{cusName}, #{cusAddr}, #{cusAddr2}, #{cusZip},
+			#{cusTel}, #{cusEmp}, #{cusEmail}, #{cusBirth}, #{cusLogo}, #{cusImage}, #{cusSignature}
+		)
+	</insert>
+	
+	<insert id="registerFile" parameterType="attachVO" useGeneratedKeys="true">
+		<selectKey keyProperty="fileNo" resultType="String" order="BEFORE">
+			select seq_attach.nextval from dual
+		</selectKey>
+			insert into attach(
+				file_no, file_savepath, file_name, file_orgname, file_size, file_mime,
+				file_downcount, file_regdate, file_uploader, file_del_conf, file_del_date, file_code
+			)values(
+				#{fileNo}, #{fileSavepath}, #{fileName}, #{fileOrgname}, #{fileSize}, #{fileMime},
+				'0', sysdate, #{fileUploader}, 'N', '', #{fileCode}
+			)
+	</insert>
+	
+	<select id="loginCheck" parameterType="customerVO" resultType="customerVO">
+		select
+			cus_rnum, cus_pw, cus_com, cus_name, cus_logo, cus_addr, cus_addr2, cus_zip,
+			cus_tel, cus_emp, cus_email, cus_birth, cus_image, cus_signature
+		from customer
+		where cus_rnum = #{cusRnum}
+	</select>
+	
+	<select id="idCheck" parameterType="String" resultType="customerVO">
+		select
+			cus_rnum, cus_pw, cus_com, cus_name, cus_logo, cus_addr, cus_addr2, cus_zip,
+			cus_tel, cus_emp, cus_email, cus_birth, cus_image, cus_signature
+		from customer
+		where cus_rnum = #{cusRnum}
+	</select>
+	
+	<select id="emailCheck" parameterType="String" resultType="customerVO">
+		select
+			cus_rnum, cus_pw, cus_com, cus_name, cus_logo, cus_addr, cus_addr2, cus_zip,
+			cus_tel, cus_emp, cus_email, cus_birth, cus_image, cus_signature
+		from customer
+		where cus_email = #{cusEmail}
+	</select>
+	
+
+</mapper>

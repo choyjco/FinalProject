@@ -1,0 +1,384 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.vacation.VacationMapper">
+
+	<sql id="commonSearch">
+		<if test="searchType != null and searchType == 'empty'">
+			and (e.emp_dept like '%'||#{selectDept}||'%')
+		</if>
+		<if test="searchType != null and searchType == 'notempty'">
+			and (e.emp_name like '%'||#{searchWord}||'%') 
+			and (e.emp_dept like '%'||#{selectDept}||'%') 
+		</if>
+	</sql>
+	
+	<sql id="nameSearch">
+		<if test="searchType != null and searchType == 'noname'">
+			and (e.emp_dept like '%'||#{selectDept}||'%')
+			and (V.VP_CHG_DATE BETWEEN to_date(#{yearSelect}||'0101', 'YYYY-MM-DD') and to_date(#{yearSelect}||'1231', 'YYYY-MM-DD'))
+		</if>
+		<if test="searchType != null and searchType == 'yesname'">
+			and (e.emp_name like '%'||#{searchWord}||'%')
+			and (e.emp_dept like '%'||#{selectDept}||'%')
+			and (V.VP_CHG_DATE BETWEEN to_date(#{yearSelect}||'0101', 'YYYY-MM-DD') and to_date(#{yearSelect}||'1231', 'YYYY-MM-DD'))
+		</if>
+	</sql>
+
+	<select id="allVacationChange" statementType="CALLABLE">
+	    {
+	    	call PROC_ADD_VP_DAYS
+	    }
+	</select>
+	
+
+	<select id="selectHaveVacCount" parameterType="pagingVO" resultType="int">
+		SELECT COUNT(*)
+		FROM (
+		    SELECT
+		        e.emp_name,
+		        e.emp_no,
+		        e.emp_dept,
+		        latest_vp.vp_days AS latest_vp_days,
+		        oldest_vp.vp_days AS oldest_vp_days
+		    FROM
+		        emp e
+		    LEFT JOIN (
+		        SELECT
+		            emp_no,
+		            vp_days,
+		            vp_chg_date,
+		            ROW_NUMBER() OVER (PARTITION BY emp_no ORDER BY vp_chg_date DESC) AS rn
+		        FROM
+		            vp_chg
+		        WHERE
+		            TO_CHAR(vp_chg_date, 'YYYY') = '2023'
+		    ) latest_vp
+		    ON
+		        e.emp_no = latest_vp.emp_no AND latest_vp.rn = 1
+		    LEFT JOIN (
+		        SELECT
+		            emp_no,
+		            vp_days,
+		            vp_chg_date,
+		            ROW_NUMBER() OVER (PARTITION BY emp_no ORDER BY vp_chg_date ASC) AS rn
+		        FROM
+		            vp_chg
+		        WHERE
+		            TO_CHAR(vp_chg_date, 'YYYY') = '2023'
+		    ) oldest_vp
+		    ON
+		        e.emp_no = oldest_vp.emp_no AND oldest_vp.rn = 1
+		    WHERE
+		        (latest_vp.emp_no IS NOT NULL OR oldest_vp.emp_no IS NOT NULL)
+			<include refid="commonSearch"/>
+		)
+	</select>
+
+	<select id="selectHaveVacList" parameterType="pagingVO" resultType="vacPersonalVO">
+		SELECT *
+		FROM (
+		    SELECT
+		        a.*,
+		        ROW_NUMBER() OVER (ORDER BY a.emp_name) AS rnum
+		    FROM (
+		        SELECT
+		            e.emp_name,
+		            e.emp_no,
+		            e.emp_profile,
+		            e.emp_dept,
+		            latest_vp.vp_days AS latest_vp_days,
+		            oldest_vp.vp_days AS oldest_vp_days
+		        FROM
+		            emp e
+		        LEFT JOIN (
+		            SELECT
+		                emp_no,
+		                vp_days,
+		                vp_chg_date,
+		                ROW_NUMBER() OVER (PARTITION BY emp_no ORDER BY vp_chg_date DESC) AS rn
+		            FROM
+		                vp_chg
+		            WHERE
+		                TO_CHAR(vp_chg_date, 'YYYY') = '2023'
+		        ) latest_vp
+		        ON
+		            e.emp_no = latest_vp.emp_no AND latest_vp.rn = 1
+		        LEFT JOIN (
+		            SELECT
+		                emp_no,
+		                vp_days,
+		                vp_chg_date,
+		                ROW_NUMBER() OVER (PARTITION BY emp_no ORDER BY vp_chg_date ASC) AS rn
+		            FROM
+		                vp_chg
+		            WHERE
+		                TO_CHAR(vp_chg_date, 'YYYY') = '2023'
+		        ) oldest_vp
+		        ON
+		            e.emp_no = oldest_vp.emp_no AND oldest_vp.rn = 1
+		        WHERE
+		            (latest_vp.emp_no IS NOT NULL OR oldest_vp.emp_no IS NOT NULL)
+		        <include refid="commonSearch"/>
+		    ) a
+		    ORDER BY a.emp_name
+		) b
+		WHERE b.rnum BETWEEN #{startRow} AND #{endRow}
+	</select>
+
+
+	<select id="vacList" resultType="vacationVO">
+		SELECT
+		    vac_code,
+		    vac_name,
+		    vac_cont,
+		    vac_amt,
+		    vac_gen,
+		    vac_wg_pay,
+		    vac_cert
+		FROM
+		    vac
+	</select>
+	
+	<!-- 변경일자가 선택연도(받을지 말지?암튼 일단 올해로 고정)의 가장 최신/오래된 날을 기준으로 휴가정보를 불러오는 쿼리 -->
+	<select id="haveVacList" resultType="vacPersonalVO">
+		SELECT
+		    e.emp_name,
+		    e.emp_no,
+		    e.emp_dept,
+		    latest_vp.vp_days AS latest_vp_days,
+		    oldest_vp.vp_days AS oldest_vp_days
+		FROM
+		    emp e
+		LEFT JOIN (
+		    SELECT
+		        emp_no,
+		        vp_days,
+		        vp_chg_date,
+		        ROW_NUMBER() OVER (PARTITION BY emp_no ORDER BY vp_chg_date DESC) AS rn
+		    FROM
+		        vp_chg
+		    WHERE
+		        TO_CHAR(vp_chg_date, 'YYYY') = '2023'
+		) latest_vp
+		ON
+		    e.emp_no = latest_vp.emp_no AND latest_vp.rn = 1
+		LEFT JOIN (
+		    SELECT
+		        emp_no,
+		        vp_days,
+		        vp_chg_date,
+		        ROW_NUMBER() OVER (PARTITION BY emp_no ORDER BY vp_chg_date ASC) AS rn
+		    FROM
+		        vp_chg
+		    WHERE
+		        TO_CHAR(vp_chg_date, 'YYYY') = '2023'
+		) oldest_vp
+		ON
+		    e.emp_no = oldest_vp.emp_no AND oldest_vp.rn = 1
+		WHERE
+		    latest_vp.emp_no IS NOT NULL OR oldest_vp.emp_no IS NOT NULL
+	</select>
+
+	<select id="myVacationList" parameterType="HashMap" resultType="vacPersonalVO">
+		SELECT
+		    vp_no,
+		    emp_no,
+		    vac_code,
+		    vp_chg_case,
+		    vp_chg_date,
+		    vp_chg_rsn,
+		    vp_add_days,
+		    vp_sub_days,
+		    vp_days
+		FROM
+		    vp_chg
+		WHERE
+		    emp_no = #{empNo}
+		AND
+		    TO_CHAR(vp_chg_date, 'YYYY') = #{year}
+		ORDER BY 
+			vp_chg_date
+	</select>
+	
+	<!-- 관리자가 보는 연차 관리 페이지 쿼리. 연도를 파라미터로 받아서 해당 연도의 월별로 조회 가능. -->
+	<select id="annualManageList" parameterType="HashMap" resultType="vacPersonalVO">
+		SELECT *
+		FROM (
+		    SELECT 
+		        E.EMP_NO,
+		        E.EMP_NAME,
+		        C.COM_NAME,
+		        TO_CHAR(V.VP_CHG_DATE, 'MM') AS MONTH,
+		        SUM(V.VP_ADD_DAYS) - SUM(V.VP_SUB_DAYS) AS VP_DAYS
+		    FROM 
+		        VP_CHG V
+		    LEFT JOIN 
+		        EMP E ON V.EMP_NO = E.EMP_NO
+		    LEFT JOIN 
+		        COMMON C ON E.EMP_DEPT = C.COM_CODE
+		    WHERE
+		        V.VP_CHG_DATE BETWEEN to_date(#{year}||'0101', 'YYYY-MM-DD') and to_date(#{year}||'1231', 'YYYY-MM-DD')
+		    GROUP BY 
+		        E.EMP_NO, E.EMP_NAME, C.COM_NAME, TO_CHAR(V.VP_CHG_DATE, 'MM')
+		)
+		PIVOT (
+		    SUM(VP_DAYS)
+		    FOR MONTH IN ('01' AS Jan, '02' AS Feb, '03' AS Mar, '04' AS Apr, '05' AS May, '06' AS Jun, '07' AS Jul, '08' AS Aug, '09' AS Sep, '10' AS Oct, '11' AS Nov, '12' AS Dec)
+		)
+		ORDER BY EMP_NAME
+	</select>
+
+	<!-- 사원번호로 예정된 휴가 정보를 조회하는 쿼리 -->
+	<select id="vacationApplyList" parameterType="String" resultType="vacAplyVO">
+		SELECT 
+			d.doc_stat,
+			d.doc_no,
+			va.vac_name,
+			vi.vaap_strt_date,
+			vi.vaap_end_date, 
+			vi.vaap_amt,
+			vi.vaap_rsn
+		FROM 
+			doc d, 
+			vaap_info vi, 
+			vac va
+		WHERE 
+			vi.vaap_strt_date > sysdate
+		AND 
+			va.vac_code = vi.vac_code
+		AND 
+			d.emp_no = #{empNo}
+		AND 
+			d.doc_no = vi.doc_no
+		AND
+			d.doc_stat != '취소'
+		ORDER BY 
+			vi.vaap_strt_date
+	</select>
+	
+	<update id="cancelVacAply" parameterType="String">
+		UPDATE 
+		    doc
+		SET
+		    doc_stat = '취소'
+		WHERE
+		    doc_no = #{docNo}
+	</update>
+	
+	<!-- 관리자가 휴가기안을 조회하는 쿼리 -->
+	<select id="selectVacApply" parameterType="HashMap" resultType="vacAplyVO">
+		SELECT 
+		    e.emp_name, 
+		    d.emp_no, 
+		    va.vaap_strt_date, 
+		    va.vaap_end_date, 
+		    v.vac_name, 
+		    va.vaap_amt, 
+		    d.doc_stat
+		FROM 
+		    emp e
+		JOIN 
+		    doc d 
+		ON 
+			e.emp_no = d.emp_no
+		JOIN 
+		    vaap_info va 
+		ON 
+			d.doc_no = va.doc_no
+		JOIN 
+		    vac v 
+		ON 
+			va.vac_code = v.vac_code
+		WHERE 
+		    TO_CHAR(d.doc_date, 'YYYY-MM-DD') = #{firstDate}
+		AND 
+		    d.doc_clf_code = '3'
+	</select>
+	
+	<select id="selectAnnualCount" parameterType="pagingVO" resultType="int">
+		select count(*)
+		from (
+            	SELECT *
+                FROM (
+                    SELECT 
+                        E.EMP_NO,
+                        E.EMP_NAME,
+                        C.COM_NAME,
+                        TO_CHAR(V.VP_CHG_DATE, 'MM') AS MONTH,
+                        SUM(V.VP_ADD_DAYS) - SUM(V.VP_SUB_DAYS) AS VP_DAYS
+                    FROM 
+                        VP_CHG V
+                    LEFT JOIN 
+                        EMP E ON V.EMP_NO = E.EMP_NO
+                    LEFT JOIN 
+                        COMMON C ON E.EMP_DEPT = C.COM_CODE
+                    WHERE
+                    	1=1
+                    	<include refid="nameSearch"/>
+                    GROUP BY 
+                        E.EMP_NO, E.EMP_NAME, C.COM_NAME, TO_CHAR(V.VP_CHG_DATE, 'MM')
+                )
+                PIVOT (
+                    SUM(VP_DAYS)
+                    FOR MONTH IN ('01' AS Jan, '02' AS Feb, '03' AS Mar, '04' AS Apr, '05' AS May, '06' AS Jun, '07' AS Jul, '08' AS Aug, '09' AS Sep, '10' AS Oct, '11' AS Nov, '12' AS Dec)
+                )
+                ORDER BY EMP_NAME
+        )
+	</select>
+	
+	<select id="selectAnnualList" parameterType="pagingVO" resultType="vacPersonalVO">
+		select
+			b.*
+		from(
+			select
+				a.*, row_number() over (order by EMP_NAME) rnum
+			from(
+				SELECT *
+                FROM (
+                    SELECT 
+                        E.EMP_NO,
+                        E.EMP_NAME,
+                        C.COM_NAME,
+                        TO_CHAR(V.VP_CHG_DATE, 'MM') AS MONTH,
+                        SUM(V.VP_ADD_DAYS) - SUM(V.VP_SUB_DAYS) AS VP_DAYS
+                    FROM 
+                        VP_CHG V
+                    LEFT JOIN 
+                        EMP E ON V.EMP_NO = E.EMP_NO
+                    LEFT JOIN 
+                        COMMON C ON E.EMP_DEPT = C.COM_CODE
+                    WHERE
+                    	1=1
+                        <include refid="nameSearch"/>
+                    GROUP BY 
+                        E.EMP_NO, E.EMP_NAME, C.COM_NAME, TO_CHAR(V.VP_CHG_DATE, 'MM')
+                )
+                PIVOT (
+                    SUM(VP_DAYS)
+                    FOR MONTH IN ('01' AS Jan, '02' AS Feb, '03' AS Mar, '04' AS Apr, '05' AS May, '06' AS Jun, '07' AS Jul, '08' AS Aug, '09' AS Sep, '10' AS Oct, '11' AS Nov, '12' AS Dec)
+                )
+                ORDER BY EMP_NAME
+			) a
+		) b
+		WHERE b.rnum BETWEEN #{startRow} AND #{endRow}
+	</select>
+	
+	<select id="selectAllvacEmp" resultType="vacAplyVO">
+		SELECT
+	    	d.doc_no
+		  , d.emp_no
+		  , e.emp_name
+		  , vaap_amt
+		  , vaap_rsn
+		  , vac_code
+		  , vaap_strt_date
+		  , vaap_end_date
+		FROM doc d, emp e, vaap_info vi
+		WHERE d.emp_no = e.emp_no
+		AND d.doc_no = vi.doc_no
+	</select>
+	
+	
+</mapper>

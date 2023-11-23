@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.main.MainUserMapper">
+	
+	<resultMap type="inqBoardVO" id="inqBoardMap">
+		<id property="inqNo" column="inq_no"/>
+		<result property="inqNo" column="inq_no"/>
+		<result property="inqTitle" column="inq_title"/>
+		<result property="inqCont" column="inq_cont"/>
+		<result property="inqRepl" column="inq_repl"/>
+		<result property="inqDate" column="inq_date"/>
+		<result property="inqConf" column="inq_conf"/>
+		<result property="cusRnum" column="cus_rnum"/>
+		<collection property="customerVO" resultMap="customerMap"/>
+	</resultMap>
+
+	<resultMap type="customerVO" id="customerMap">
+		<id property="cusRnum" column="cus_rnum"/>
+		<result property="cusRnum" column="cus_rnum"/>
+		<result property="cusPw" column="cus_pw"/>
+		<result property="cusCom" column="cus_com"/>
+		<result property="cusName" column="cus_name"/>
+		<result property="cusLogo" column="cus_logo"/>
+		<result property="cusAddr" column="cus_addr"/>
+		<result property="cusAddr2" column="cus_addr2"/>
+		<result property="cusZip" column="cus_zip"/>
+		<result property="cusTel" column="cus_tel"/>
+		<result property="cusEmp" column="cus_emp"/>
+		<result property="cusEmail" column="cus_email"/>
+		<result property="cusBirth" column="cus_birth"/>
+		<result property="cusImage" column="cus_image"/>
+		<result property="cusSignature" column="cus_signature"/>
+		<collection property="attachList" resultMap="attachMap"/>
+		<collection property="paymentVO" resultMap="paymentMap"/>
+	</resultMap>
+	
+	<resultMap type="paymentVO" id="paymentMap">
+		<id property="payCode" column="pay_code"/>
+		<result property="payCode" column="pay_code"/>
+		<result property="payDate" column="pay_date"/>
+		<result property="payEdate" column="pay_edate"/>
+		<result property="payAmt" column="pay_amt"/>
+		<result property="payMethod" column="pay_method"/>
+		<result property="cusRnum" column="cus_rnum"/>
+		<result property="payStatus" column="pay_status"/>
+		<result property="levelName" column="level_name"/>
+		<result property="levelMemo" column="level_memo"/>
+		<result property="levelFee" column="level_fee"/>
+		<result property="levelVol" column="level_vol"/>
+		<result property="funcName" column="func_name"/>
+		<result property="funcMemo" column="func_memo"/>
+		<result property="funcFee" column="func_fee"/>
+		<association property="funcLevelList" resultMap="funcLevelMap"></association>
+	</resultMap>
+	
+	
+	<resultMap type="funcLevelVO" id="funcLevelMap">
+		<result property="payCode" column="pay_code"/>
+		<result property="funcName" column="func_name"/>
+		<result property="funcMemo" column="func_memo"/>
+<!-- 		<collection property="funcInfoVOList" resultMap="funcInfoMap"></collection> -->
+	</resultMap>
+	
+	<resultMap type="attachVO" id="attachMap">
+		<id property="fileNo" column="file_no"/>
+		<result property="fileNo" column="file_no"/>
+		<result property="fileSavepath" column="file_savepath"/>
+		<result property="fileName" column="file_name"/>
+		<result property="fileOrgname" column="file_orgname"/>
+		<result property="fileSize" column="file_size"/>
+		<result property="fileMime" column="file_mime"/>
+		<result property="fileDowncount" column="file_downcount"/>
+		<result property="fileRegdate" column="file_regdate"/>
+		<result property="fileUploader" column="file_uploader"/>
+		<result property="fileDelConf" column="file_del_conf"/>
+		<result property="fileDelDate" column="file_del_date"/>
+		<result property="fileCode" column="file_code"/>
+	</resultMap>
+
+	<!-- 구매 내역(회원) -->
+	<select id="selectPaymentListU" parameterType="String" resultMap="customerMap">
+		SELECT
+		    p.pay_code, p.pay_date, p.pay_edate, p.pay_amt, p.pay_method, p.pay_status,
+		    c.cus_rnum, c.cus_com, c.cus_name, pd.level_name,
+		    li.level_memo, li.level_fee, li.level_vol,
+		    fl.func_name, fi.func_memo, fi.func_fee
+		FROM payment p
+		LEFT OUTER JOIN customer c ON p.cus_rnum = c.cus_rnum
+		LEFT OUTER JOIN payment_detail pd ON p.pay_code = pd.pay_code
+		LEFT OUTER JOIN level_info li ON pd.level_name = li.level_name
+		LEFT OUTER JOIN func_level fl ON pd.pay_code = fl.pay_code
+		LEFT OUTER JOIN func_info fi ON fl.func_name = fi.func_name
+		WHERE c.cus_rnum = #{cusRnum} 
+		AND p.pay_code = (SELECT pay_code
+		                 FROM (SELECT cus_rnum, pay_code, ROW_NUMBER() OVER (PARTITION BY cus_rnum ORDER BY pay_code DESC) AS rn
+		                       FROM payment)
+		                 WHERE rn = 1
+		                 AND cus_rnum = #{cusRnum})
+
+	</select>
+	
+	
+	
+	<select id="selectMemberDetail" parameterType="String" resultMap="customerMap">
+		select cus.cus_rnum, cus.cus_com, cus.cus_name,
+			(select attach.file_savepath from attach where cus.cus_logo = attach.file_no) cus_logo,
+		    (select attach.file_savepath from attach where cus.cus_image = attach.file_no) cus_image, 
+		    (select attach.file_savepath from attach where cus.cus_signature = attach.file_no) cus_signature, cus.cus_zip,
+			cus_addr, cus_addr2, cus_tel, cus_emp, cus_email, cus_birth
+		from customer cus
+		where cus.cus_rnum = #{cusRnum}
+	</select>
+	
+	
+	<sql id="boardSearch">
+		<if test="searchType != null and searchType == 'inqTitle'">
+			and (i.inq_title like '%'||#{searchWord}||'%')
+		</if>
+		<if test="searchType != null and searchType == 'cusCom'">
+			and (c.cus_com like '%'||#{searchWord}||'%')
+		</if>
+		<if test="searchType != null and searchType == 'cusName'">
+			and (c.cus_name like '%'||#{searchWord}||'%')
+		</if>
+		<if test="searchType != null and searchType == 'cusRnum'">
+			and (i.cus_rnum like '%'||#{searchWord}||'%')
+		</if>
+	</sql>
+	
+	<select id="selectBoardCount" parameterType="pagingVO" resultType="int">
+		select count(i.inq_no)
+		from inq_board i
+		where 1=1
+		<include refid="boardSearch"/>
+	</select>
+
+	<select id="selectBoardList" parameterType="pagingVO" resultMap="inqBoardMap">
+		select
+			b.*
+		from(
+			select
+				a.*, row_number() over (order by a.inq_no desc) rnum
+			from(
+				select
+				    i.inq_no, i.inq_title, i.cus_rnum, c.cus_name, c.cus_com, i.inq_date, i.inq_conf
+				from inq_board i left outer join customer c on i.cus_rnum = c.cus_rnum
+				where 1=1
+				<include refid="boardSearch"/>
+				order by i.inq_no desc
+			) a
+		) b
+		<![CDATA[
+			where b.rnum >= #{startRow} and b.rnum <= #{endRow}
+		]]>
+	</select>
+	
+
+</mapper>

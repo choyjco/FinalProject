@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.home.ScheduleMapper">
+
+	<insert id="insert" parameterType="scheduleVO" useGeneratedKeys="true">
+		<selectKey keyProperty="schNo" resultType="string" order="BEFORE">
+			select seq_schedule.nextval from dual
+		</selectKey>
+		INSERT INTO SCHEDULE(
+			sch_no, sch_title, sch_content, sch_sdate, sch_edate, sch_color, sch_dept, emp_no
+		)VALUES(
+			#{schNo}, #{schTitle}, #{schContent}, #{schSdate}, #{schEdate}, #{schColor}, #{schDept}, #{empNo}
+		)
+	</insert>
+
+	<select id="findAll" resultType="scheduleVO">
+		SELECT
+		sch_no, sch_title, sch_content, sch_sdate, sch_edate, sch_color, sch_dept, emp_no
+		FROM SCHEDULE
+		WHERE emp_no = #{empNo}
+	</select>
+	
+	<select id="findDept" resultType="scheduleVO">
+		SELECT
+		sch_no, sch_title, sch_content, sch_sdate, sch_edate, sch_color, sch_dept, emp_no
+		FROM SCHEDULE
+		WHERE sch_dept = #{schDept}
+	</select>
+
+	<delete id="delete" parameterType="String">
+		DELETE FROM SCHEDULE WHERE sch_sdate = #{date}
+	</delete>
+
+	<update id="update" parameterType="scheduleVO">
+		UPDATE SCHEDULE
+		SET sch_sdate = #{schSdate},
+		sch_edate = #{schEdate}
+		WHERE sch_sdate = #{scholdSdate}
+	</update>
+	
+	<select id="selectTodoList" parameterType="string" resultType="todoVO">
+		SELECT
+		    to_number(todo_no) as todo_no, emp_no, todo_content
+		FROM todolist
+		WHERE emp_no = #{empNo}
+		ORDER BY todo_no
+	</select>
+	
+	<insert id="insertTodoList" parameterType="todoVO">
+		<selectKey keyProperty="todoNo" resultType="string" order="BEFORE">
+			select todolist_seq.nextval from dual
+		</selectKey>
+		INSERT INTO todolist (
+		    todo_no, emp_no, todo_content
+		) VALUES (
+		    #{todoNo}, #{empNo}, #{todoContent}
+		)
+	</insert>
+	
+	<delete id="deleteTodoList" parameterType="todoVO">
+		DELETE FROM todolist
+		WHERE emp_no = #{empNo}
+		AND todo_content = #{todoContent}
+	</delete>
+</mapper>

@@ -1,0 +1,337 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.work.WorkMapper">
+
+	<select id="workList" parameterType="HashMap" resultType="workVO">
+		SELECT
+		    work_no,
+		    emp_no,
+		    work_stime,
+		    work_etime,
+		    work_total
+		FROM
+		    work_info
+		WHERE
+		    work_stime BETWEEN TO_DATE(#{firstDate}, 'YYYY-MM-DD')AND TO_DATE(#{lastDate})
+		AND
+			emp_no = #{empNo}
+		AND
+			work_etime is not null
+		ORDER BY work_stime
+	</select>
+	
+	<select id="workListMonth" parameterType="HashMap" resultType="workVO">
+		SELECT
+		    work_no,
+		    emp_no,
+		    work_stime,
+		    work_etime,
+		    work_total
+		FROM
+		    work_info
+		WHERE
+		    TO_CHAR(work_stime, 'YYYY-MM') = TO_CHAR(TO_DATE(#{selectedDate}, 'YYYY-MM-DD'), 'YYYY-MM')
+		AND 
+			emp_no = #{empNo}
+		AND
+			work_etime is not null    
+		ORDER BY work_stime
+	</select>
+
+	<select id="adminCheck" parameterType="String" resultType="String">
+		SELECT
+		    emp_role
+		FROM
+		    emp_auth
+		WHERE
+			emp_no = #{empNo}
+	</select>
+
+	<select id="empList" resultType="empVO">
+		SELECT
+		    emp_no,
+		    emp_pw,
+		    emp_name,
+		    emp_ename,
+		    emp_gen,
+		    emp_reg1,
+		    emp_reg2,
+		    emp_tel,
+		    emp_addr1,
+		    emp_addr2,
+		    emp_email,
+		    emp_date,
+		    emp_stat,
+		    emp_work,
+		    emp_acct,
+		    emp_bank,
+		    emp_profile,
+		    emp_signature,
+		    emp_dept,
+		    emp_pos,
+		    emp_rank,
+		    emp_job,
+		    emp_ffile
+		FROM
+		    emp
+	</select>
+
+	<select id="teamWorkList" parameterType="HashMap" resultType="workVO">
+		SELECT 
+		    e.EMP_NAME,
+		    c.COM_NAME,
+		    w.WORK_STIME,
+		    w.WORK_ETIME,
+		    w.WORK_TOTAL
+		FROM 
+		    work_info w
+		JOIN 
+		    emp e ON w.EMP_NO = e.EMP_NO
+		JOIN 
+		    common c ON e.EMP_DEPT = c.COM_CODE
+		WHERE 
+		    w.WORK_STIME BETWEEN #{firstDate} AND #{lastDate}
+		AND 
+			c.COM_CODE like #{selectDept}||'%'
+		ORDER BY 
+		    e.EMP_NAME, w.WORK_STIME
+	</select>
+	
+	<select id="selectTeamWorkCount" parameterType="pagingVO" resultType="int">
+		select count(DISTINCT emp_name)
+		from (
+		        SELECT 
+				    e.EMP_NAME,
+				    c.COM_NAME,
+				    w.WORK_STIME,
+				    w.WORK_ETIME,
+				    w.WORK_TOTAL
+				FROM 
+				    work_info w
+				JOIN 
+				    emp e ON w.EMP_NO = e.EMP_NO
+				JOIN 
+				    common c ON e.EMP_DEPT = c.COM_CODE
+				WHERE 
+				    w.WORK_STIME BETWEEN #{firstDate} AND #{lastDate}
+				AND 
+					c.COM_CODE like #{selectDept}||'%'
+				ORDER BY 
+				    e.EMP_NAME, w.WORK_STIME
+		)
+	</select>
+
+	<select id="selectTeamWorkList" parameterType="pagingVO" resultType="workVO">
+		select
+			b.*
+		from(
+			select
+				a.*, DENSE_RANK() over (order by a.EMP_NAME) rnum
+			from(
+				 SELECT 
+                    e.EMP_NAME,
+                    e.EMP_PROFILE,
+                    c.COM_NAME,
+                    w.WORK_STIME,
+                    w.WORK_ETIME,
+                    w.WORK_TOTAL
+                FROM 
+                    work_info w
+                JOIN 
+                    emp e ON w.EMP_NO = e.EMP_NO
+                JOIN 
+                    common c ON e.EMP_DEPT = c.COM_CODE
+                WHERE 
+				    w.WORK_STIME BETWEEN #{firstDate} AND #{lastDate}
+				AND 
+					c.COM_CODE like #{selectDept}||'%'
+				AND
+					w.WORK_ETIME is not null
+                ORDER BY 
+                    e.EMP_NAME, w.WORK_STIME
+			) a
+		) b
+        WHERE b.rnum BETWEEN #{startRow} AND #{endRow}
+	</select>
+
+	<select id="workManageList" parameterType="HashMap" resultType="workVO">
+		SELECT 
+		    e.EMP_NAME,
+		    c.COM_NAME,
+		    w.EMP_NO,
+		    SUM(w.WORK_TOTAL) workSum
+		FROM 
+		    work_info w
+		JOIN 
+		    emp e ON w.EMP_NO = e.EMP_NO
+		JOIN 
+		    common c ON e.EMP_DEPT = c.COM_CODE
+		WHERE 
+		    w.WORK_STIME BETWEEN #{firstDate} AND #{lastDate}
+		AND 
+			c.COM_CODE like #{selectDept}||'%'
+		GROUP BY 
+		    w.EMP_NO, e.EMP_NAME, c.COM_NAME
+		ORDER BY 
+		    e.EMP_NAME
+	</select>
+
+	<select id="selectWorkManageCount" parameterType="pagingVO" resultType="int">
+		select count(*)
+		from (
+	        SELECT 
+	            e.EMP_NAME,
+	            c.COM_NAME,
+	            w.EMP_NO,
+	            SUM(w.WORK_TOTAL) workSum
+	        FROM 
+	            work_info w
+	        JOIN 
+	            emp e ON w.EMP_NO = e.EMP_NO
+	        JOIN 
+	            common c ON e.EMP_DEPT = c.COM_CODE
+	        WHERE 
+	            w.WORK_STIME BETWEEN #{firstDate} AND #{lastDate}
+	        AND 
+	            c.COM_CODE like #{selectDept}||'%'   
+	        GROUP BY 
+	            w.EMP_NO, e.EMP_NAME, c.COM_NAME
+	        ORDER BY 
+	            e.EMP_NAME desc
+		        )
+	</select>
+
+	<select id="selectWorkManageList" parameterType="pagingVO" resultType="workVO">
+		select
+			b.*
+		from(
+			select
+				a.*, row_number() over (order by a.EMP_NAME) rnum
+			from(
+				 SELECT 
+		            e.EMP_NAME,
+		            e.EMP_PROFILE,
+		            c.COM_NAME,
+		            w.EMP_NO,
+		            SUM(w.WORK_TOTAL) workSum
+		        FROM 
+		            work_info w
+		        JOIN 
+		            emp e ON w.EMP_NO = e.EMP_NO
+		        JOIN 
+		            common c ON e.EMP_DEPT = c.COM_CODE
+		        WHERE 
+		            w.WORK_STIME BETWEEN #{firstDate} AND #{lastDate}
+		        AND 
+		            c.COM_CODE like #{selectDept}||'%'   
+		        GROUP BY 
+		            w.EMP_NO, e.EMP_NAME, c.COM_NAME, e.EMP_PROFILE
+		        ORDER BY 
+		            e.EMP_NAME
+				) a
+			) b
+		where b.rnum BETWEEN #{startRow} AND #{endRow}
+	</select>
+
+	<select id="selectWork" parameterType="HashMap" resultType="workVO">
+		SELECT 
+		    e.EMP_NAME,
+		    c.COM_NAME,
+		    w.WORK_STIME,
+		    w.WORK_ETIME,
+		    w.WORK_TOTAL
+		FROM 
+		    work_info w
+		JOIN 
+		    emp e ON w.EMP_NO = e.EMP_NO
+		JOIN 
+		    common c ON e.EMP_DEPT = c.COM_CODE
+		WHERE
+			w.emp_no = #{empNo}
+		AND
+			w.WORK_STIME BETWEEN #{firstDate} AND #{lastDate}
+		ORDER BY 
+			w.WORK_STIME
+	</select>
+	
+	<!-- doc테이블에 insert될 때 기안 코드따라서 각 테이블에 같이 insert 되어야 하고 거기서 불러오는 로직이어야 함. -->
+	<!-- JOIN이랑 LEFT JOIN 값 차이나는지 제대로 보기 -->
+	<select id="workApplyList" parameterType="HashMap" resultType="workVO">
+		SELECT 
+		    d.emp_no,
+		    w.work_kind, 
+		    w.work_amt, 
+		    d.doc_stat,
+		    e.emp_name, 
+		    c.com_name,
+		    w.work_sdate,
+		    w.work_edate,
+		    d.doc_cont,
+            d.doc_title
+		FROM 
+		    doc d
+		JOIN 
+		    work_aply w 
+		ON 
+		    d.doc_no = w.doc_no
+		LEFT JOIN 
+		    emp e 
+		ON 
+		    d.emp_no = e.emp_no
+		LEFT JOIN 
+		    common c 
+		ON 
+		    e.emp_dept = c.com_code
+		WHERE
+			TO_CHAR(d.doc_date, 'YYYY-MM-DD') = #{firstDate}
+		AND
+			d.doc_clf_code = '2'
+	</select>
+	
+	<insert id="insertworkStart" parameterType="string">
+		INSERT INTO work_info (
+		    work_no
+		    , emp_no
+		    , work_stime
+		    , work_total
+		) VALUES (
+		    seq_work_no.nextval
+		  , #{empNo}
+		  , sysdate
+		  , 0
+		)
+	</insert>
+	
+	<select id="selectoneWork" parameterType="string" resultType="workVO">
+	    SELECT
+	        work_no
+	      , emp_no
+	      , work_stime
+	      , work_etime
+	      , work_total
+	    FROM
+	        work_info
+	    WHERE 
+	        emp_no = #{empNo}
+	    AND TO_CHAR(work_stime, 'YYYY-MM-DD') = TO_CHAR(sysdate, 'YYYY-MM-DD')
+	</select>
+	
+	<update id="updateworkEnd" parameterType="string">
+		UPDATE work_info
+		SET
+		    work_etime = sysdate
+		WHERE emp_no = #{empNo}
+		AND TO_CHAR(work_stime, 'YYYY-MM-DD') = TO_CHAR(sysdate, 'YYYY-MM-DD')
+	</update>
+	
+	<update id="updateworkTotal" parameterType="workVO">
+		UPDATE work_info
+		SET
+		    work_total = #{workTotal}
+		WHERE work_no = #{workNo}
+		AND TO_CHAR(work_stime, 'YYYY-MM-DD') = TO_CHAR(sysdate, 'YYYY-MM-DD')
+	</update>
+	
+</mapper>

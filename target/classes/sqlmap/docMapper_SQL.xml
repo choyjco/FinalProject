@@ -1,0 +1,482 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.document.DocMapper">
+	
+	<sql id="aprList">
+		<if test="searchWord != null">
+			and (doc.doc_title like '%'||#{searchWord}||'%')
+		</if>
+	</sql>
+	
+	<sql id="docSearch">
+		<if test="searchWord != null">
+			and (doc_clf_name like '%'||#{searchWord}||'%')
+		</if>
+	</sql>
+	
+	<sql id="docType">
+		<if test="searchType != null">
+			and (doc_clf_code = #{searchType})
+			and (doc_title like '%'||#{searchWord}||'%')
+		</if>
+	</sql>
+	
+	<sql id="searchAll">
+		<if test="searchType != null and searchType == 'title'">
+			and (doc_title like '%'||#{searchWord}||'%')
+		</if>
+		<if test="searchType != null and searchType == 'empName'">
+			and (emp_name like '%'||#{searchWord}||'%')
+		</if>
+		<if test="searchType != null and searchType == 'docClfname'">
+			and (clf.doc_clf_name like '%'||#{searchWord}||'%')
+		</if>
+	</sql>
+	
+<!-- 	<resultMap type="commonVO" id="comMap"> -->
+		
+<!-- 	</resultMap> -->
+	
+	<select id="docTypeList" parameterType="pagingVO" resultType="documentVO">
+		select * from (
+		    select a.*, row_number() over (order by a.doc_clf_name desc) as rnum
+		    from (
+		        select
+					doc_clf_code, doc_clf_name, doc_clf_date, doc_clf_file
+				from doc_clf
+				where 1=1
+				<include refid="docSearch"/>
+				order by doc_clf_date
+		    ) a
+		) b
+		<![CDATA[
+			where b.rnum >= #{startRow} and b.rnum <= #{endRow}
+		]]>
+	</select>
+	
+	<select id="countList" parameterType="pagingVO" resultType="int">
+		select count(DOC_CLF_CODE)
+		from doc_clf
+	</select>
+	
+	<select id="search" parameterType="documentVO" resultType="documentVO">
+		select
+			DOC_CLF_CODE, DOC_CLF_NAME, DOC_CLF_DATE, DOC_CLF_FILE
+		from doc_clf
+		where 1=1
+		<if test="docClfName != null">
+			and (doc_clf_name like '%'||#{docClfName}||'%')
+		</if>
+		order by doc_clf_name
+	</select>
+	
+	<select id="docList" parameterType="pagingVO" resultType="docVO">
+	
+		select b.* from (
+		    select a.*, row_number() over (order by a.doc_date desc) as rnum
+		    from (
+				select
+		        	doc_no, d.emp_no, doc_clf_code, doc_title, doc_cont, doc_date, 
+		        	(select clf.doc_clf_name from doc_clf clf where d.doc_clf_code = clf.doc_clf_code) doc_clf_name,
+		    		doc_stat, emp_name, (select com_name from common where com_code = emp_dept) emp_dept 
+		    	from doc d left outer join emp e on(d.emp_no = e.emp_no)
+				where d.emp_no = #{boardCate}
+				and d.doc_stat not in ('작성중')
+				<include refid="docType"/>
+				order by doc_date desc
+		    ) a
+		) b
+		<![CDATA[
+			where b.rnum >= #{startRow} and b.rnum <= #{endRow}
+		]]>
+	</select>
+	
+	<select id="myDocList" parameterType="string" resultType="int">
+		select count(doc_no) from (select
+	        	doc_no, d.emp_no, doc_clf_code, doc_title, doc_cont, doc_date, 
+	    		doc_stat, emp_name, (select com_name from common where com_code = emp_dept) emp_dept 
+	    	from doc d left outer join emp e on(d.emp_no = e.emp_no)
+			where d.emp_no = #{boardCate}
+			and d.doc_stat not in ('작성중')
+			<include refid="docType"/>
+			order by doc_date desc)
+	</select>
+	
+	<select id="docListAll" parameterType="pagingVO" resultType="docVO">
+		select b.* from (
+		    select a.*, row_number() over (order by a.doc_date desc) as rnum
+		    from (
+                select d.doc_no, emp.emp_no, clf.doc_clf_name, d.doc_title, doc_conf_date,
+                doc_cont, doc_date, doc_stat, emp_name
+					from doc d, emp, (select doc_clf_name, doc_clf_code from doc_clf) clf
+				where emp.emp_no = d.emp_no
+					and clf.doc_clf_code = d.doc_clf_code
+					and d.doc_stat not in ('작성중')
+					and d.doc_stat not in ('취소')
+                <include refid="searchAll"/>
+                order by doc_date desc
+		    ) a
+		) b
+		<![CDATA[
+			where b.rnum >= #{startRow} and b.rnum <= #{endRow}
+		]]>
+	</select>
+	
+	<select id="allCount" resultType="int" parameterType="docVO">
+		select count(d.doc_no)
+		from doc d left outer join emp e on(d.emp_no = e.emp_no)
+		where 1=1
+		<if test="empName != null">
+			and (emp_name like '%'||#{empName}||'%')
+		</if>
+		order by doc_no desc
+	</select>
+	
+	<select id="searchDoc" parameterType="docVO" resultType="docVO">
+		select
+    		doc_no, d.emp_no, doc_clf_code, doc_title, doc_cont, doc_date, 
+    		doc_stat, e.emp_name, emp_dept
+		from doc d left outer join emp e on(d.emp_no = e.emp_no)
+		where 1=1
+		<if test="empName != null">
+			and (e.emp_name like '%'||#{empName}||'%')
+		</if>
+		order by doc_date
+		
+	</select>
+	
+	<select id="detail" parameterType="string" resultType="documentVO">
+		select
+			doc_clf_code, doc_clf_name, doc_clf_date, doc_clf_file
+		from doc_clf
+		where doc_clf_code = #{docClfCode}
+	</select>
+	
+	<select id="workList" parameterType="string" resultType="workaplyVO">
+		select 
+			d.doc_no, work_sdate, work_edate, work_amt, work_kind
+			, (select com_name from common where com_code = emp_dept) emp_dept 
+			, (select com_name from common where com_code = emp_pos) emp_pos
+			, (select com_name from common where com_code = emp_rank) emp_rank 
+			, (select com_name from common where com_code = emp_dept) emp_job 
+		from work_aply work, doc d, emp e 
+		where d.doc_no = work.doc_no and d.emp_no = e.emp_no and d.emp_no = #{empNo}
+	</select>
+	
+	<select id="selectDocList" parameterType="pagingVO" resultType="docVO">
+		select b.* from (
+		    select a.*, row_number() over (order by a.doc_date desc) as rnum
+		    from (
+            select
+                doc_no, d.emp_no, doc_clf_code, doc_title, doc_cont, doc_date, 
+                (select clf.doc_clf_name from doc_clf clf where d.doc_clf_code = clf.doc_clf_code) doc_clf_name,
+                doc_stat, emp_name, (select com_name from common where com_code = emp_dept) emp_dept 
+            from doc d left outer join emp e on(d.emp_no = e.emp_no)
+            where d.emp_no = #{boardCate}
+            and d.doc_stat = '작성중'
+		    ) a
+		) b
+		<![CDATA[
+			where b.rnum >= #{startRow} and b.rnum <= #{endRow}
+		]]>
+	</select>
+	
+	<select id="selectDocCnt" parameterType="pagingVO" resultType="int">
+		select count(*)
+		from (select
+                doc_no, d.emp_no, doc_clf_code, doc_title, doc_cont, doc_date, 
+                doc_stat, emp_name, (select com_name from common where com_code = emp_dept) emp_dept 
+            from doc d left outer join emp e on(d.emp_no = e.emp_no)
+            where d.emp_no = #{boardCate}
+            and d.doc_stat = '작성중')
+			
+	</select>
+	
+	<select id="aprDocList" parameterType="pagingVO" resultType="docVO">
+		select b.* from (
+			select a.*, row_number() over (order by a.doc_date desc) as rnum
+			    from (
+			 		select 
+			 			(
+			 				select emp_name from emp where emp.emp_no = apr.emp_no ) apr_name, 
+					        	apr.emp_no, apr.doc_no, apr.apr_no, apr.apr_stat, apr.apr_rej_conf, 
+					        	apr.apr_rej_rsn, apr.apr_job, apr.apr_date, 
+					        	(select emp_name from emp where doc.emp_no = emp.emp_no) emp_name, 
+					        	clf.doc_clf_code, clf.doc_clf_name, doc.doc_title, doc.doc_cont, 
+					        	doc.doc_date, doc.doc_stat, doc.doc_conf_date 
+					    from apr, doc, doc_clf clf
+					    where clf.doc_clf_code = doc.doc_clf_code
+					    and apr.doc_no = doc.doc_no
+					    and apr.emp_no = #{boardCate}
+					    and (apr.apr_stat = #{aprStat})
+					    and (doc.doc_clf_code = #{searchType})
+					    <include refid="aprList"/>
+	   				) a
+				) b
+			<![CDATA[
+				where b.rnum >= #{startRow} and b.rnum <= #{endRow}
+			]]>
+	</select>
+	
+	<select id="aprDocCnt" parameterType="pagingVO" resultType="int">
+		select 
+			count(*) 
+		from (
+			select 
+	 			(
+	 				select emp_name from emp where emp.emp_no = apr.emp_no ) apr_name, 
+			        	apr.emp_no, apr.doc_no, apr.apr_no, apr.apr_stat, apr.apr_rej_conf, 
+			        	apr.apr_rej_rsn, apr.apr_job, apr.apr_date, 
+			        	(select emp_name from emp where doc.emp_no = emp.emp_no) emp_name, 
+			        	clf.doc_clf_code, clf.doc_clf_name, doc.doc_title, doc.doc_cont, 
+			        	doc.doc_date, doc.doc_stat, doc.doc_conf_date 
+			    from apr, doc, doc_clf clf
+			    where clf.doc_clf_code = doc.doc_clf_code
+				    and apr.doc_no = doc.doc_no
+				    and apr.emp_no = #{boardCate}
+				    and (apr.apr_stat = #{aprStat})
+				    and (doc.doc_clf_code = #{searchType})
+					<include refid="aprList"/>
+		    )
+	</select>
+	
+	<select id="selectDocNo" resultType="string">
+		select seq_doc.currval from dual
+	</select>
+	
+	<insert id="docRegister" parameterType="docVO">
+		<selectKey keyProperty="docNo" resultType="string" order="BEFORE">
+			select seq_doc.nextval from dual
+		</selectKey>
+		insert into doc(
+			doc_no, emp_no, doc_clf_code, doc_title, doc_cont, doc_date, doc_stat
+		) values(
+			#{docNo}, #{empNo}, #{docClfCode}, #{docTitle}, #{docClfFile}, sysdate, '대기중'
+		)
+	</insert>
+	
+	<insert id="aprRegister" parameterType="docVO">
+		insert into apr(
+			emp_no, doc_no, apr_no, apr_stat, apr_rej_conf, apr_rej_rsn, apr_job
+		) values(
+			#{aprEmpNo}, #{docNo}, #{aprNo}, '대기중', 'N', 'N', 'N'
+		)
+	</insert>
+	
+	<select id="selectClfCode" parameterType="docVO" resultType="docVO">
+		select
+        	doc_no, d.emp_no, doc_clf_code, doc_title, doc_cont, doc_date, 
+    		doc_stat, emp_name, (select com_name from common where com_code = emp_dept) emp_dept 
+    	from doc d left outer join emp e on(d.emp_no = e.emp_no)
+		where d.emp_no = #{empNo}
+		and doc_clf_code = #{docClfCode}
+		and d.doc_stat not in ('작성중')
+	</select>
+	
+	<select id="docType" resultType="documentVO">
+		select
+			doc_clf_code, doc_clf_name, doc_clf_date, doc_clf_file
+		from doc_clf
+	</select>
+	
+	<select id="docListCnt" resultType="int">
+		 select count(*) from 
+		 	(select d.doc_no, emp.emp_no, clf.doc_clf_name, d.doc_title, doc_conf_date,
+                doc_cont, doc_date, doc_stat, emp_name
+					from doc d, emp, (select doc_clf_name, doc_clf_code from doc_clf) clf
+				where emp.emp_no = d.emp_no
+					and clf.doc_clf_code = d.doc_clf_code
+              
+                order by doc_date desc)
+	</select>
+	
+	<update id="aprUpdate" parameterType="docVO">
+		update apr
+			set
+				apr_stat = '승인',
+				apr_date = sysdate
+			where emp_no = #{empNo}
+			and doc_no = #{docNo}
+	</update>
+	
+	<select id="selectAprJob" parameterType="docVO">
+		select apr.apr_no, apr.doc_no, apr.apr_stat, apr.emp_no 
+		    from apr, 
+		    (select apr_no, doc_no, apr_stat, emp_no from apr where emp_no = #{empNo}) my
+		where apr.doc_no = my.doc_no
+		    and apr.doc_no = #{docNo}
+		    and apr.apr_no > my.apr_no
+	</select>
+	
+	<update id="docUpdate" parameterType="docVO">
+		update doc
+			set
+				doc_stat = '승인',
+				doc_conf_date = sysdate
+			where doc_no = #{docNo}
+				
+	</update>
+	
+	<select id="selectApr" parameterType="docVO" resultType="docVO">
+		select * from apr
+			where doc_no = #{docNo}
+				and emp_no = #{empNo}
+	</select>
+	
+	<update id="aprReject" parameterType="docVO">
+		update apr
+			set
+				apr_rej_rsn = #{aprRejRsn},
+				apr_date = sysdate,
+				apr_stat = '반려',
+				apr_rej_conf = 'Y'
+			where doc_no = #{docNo}
+			
+	</update>
+	
+	<update id="docReject" parameterType="docVO">
+		update doc
+			set
+				doc_stat = '반려',
+				doc_conf_date = sysdate
+			where doc_no = #{docNo}
+	</update>
+	
+	<select id="deptList" parameterType="string" resultType="infoVO">
+		select 
+            emp.emp_name,emp.emp_dept,emp.emp_pos,emp.emp_no,
+            (select common.com_name from common where com_code = emp.emp_dept) dept_name,
+            (select com_name from common where com_code = emp_pos) pos_name,
+            emp_auth.emp_role
+        from emp, emp_auth 
+		    where emp.emp_no = emp_auth.emp_no 
+		    and emp_auth.emp_role = 'ROLE_MANAGER'
+		    and emp_dept = 'a011'
+	</select>
+	
+	<delete id="deleteDoc" parameterType="string">
+		delete from doc
+		where doc_no = #{docNo}
+	</delete>
+	
+	<select id="selectDoc" parameterType="string" resultType="docVO">
+		select 
+			doc_no, emp_no, doc_clf_code, doc_title, doc_cont, doc_date,
+			(select doc_clf_name from doc_clf c 
+				where c.doc_clf_code = doc.doc_clf_code) doc_clf_name, 
+			doc_stat, doc_conf_date 
+		from doc
+		where doc_no = #{docNo}
+	</select>
+	
+	<update id="updateDoc" parameterType="docVO">
+		update doc
+			set
+				doc_title = #{docTitle},
+				doc_cont = #{docClfFile},
+				doc_date = sysdate,
+				doc_stat = '대기중'
+			where doc_no = #{docNo}
+	</update>
+	
+	<update id="updateStorage" parameterType="docVO">
+		update doc
+			set
+				doc_title = #{docTitle},
+				doc_cont = #{docClfFile},
+				doc_date = sysdate
+			where doc_no = #{docNo}
+	</update>
+	
+	<insert id="save" parameterType="docVO">
+		<selectKey keyProperty="docNo" order="BEFORE" resultType="string">
+			select seq_doc.nextval from dual
+		</selectKey>
+		insert into doc (
+    		doc_no, emp_no, doc_clf_code, doc_title, doc_cont, doc_date, doc_stat
+		) values (
+    		#{docNo}, #{empNo}, #{docClfCode}, #{docTitle}, #{docClfFile}, sysdate, '작성중' 
+		)
+	</insert>
+	
+	<select id="selectAuth" parameterType="empVO" resultType="string">
+		select emp_role
+		from emp_auth
+		where emp_no = #{empNo}
+	</select>
+	
+	<insert id="workAplyRegister" parameterType="docVO">
+		<selectKey keyProperty="docNo" order="BEFORE" resultType="string">
+			select seq_doc.currval from dual
+		</selectKey>
+		insert into work_aply(
+			doc_no, work_sdate, work_edate, work_amt, work_kind
+		) values(
+			#{docNo}, to_date(#{workSdate},'yy/MM/dd HH:MI'), to_date(#{workEdate},'yy/MM/dd HH:MI'), #{workAmt}, '출장'
+		)
+			
+	</insert>
+	
+	<update id="updateAbDoc" parameterType="docVO">
+		update work_aply
+			set
+				work_sdate = to_date(#{workSdate},'yy/MM/dd HH24:MI'),
+				work_edate = to_date(#{workEdate},'yy/MM/dd HH24:MI'),
+				work_amt = #{workAmt}
+			where doc_no = #{docNo}
+				
+	</update>
+	
+	<select id="selectWorkAply" parameterType="docVO" resultType="docVO">
+		select * from work_aply
+		where doc_no = #{docNo}
+	</select>
+	
+	<select id="selectVaap" parameterType="docVO" resultType="docVO">
+		select * from vaap_info
+		where doc_no = #{docNo}
+	</select>
+	
+	<update id="updateVaapDoc" parameterType="docVO">
+		update vaap_info
+			set
+				vaap_amt = #{vaapAmt}, 
+				vaap_strt_date = to_date(#{vaapStrtDate},'yy/MM/dd HH24:MI'), 
+				vaap_end_date = to_date(#{vaapEndDate},'yy/MM/dd HH24:MI')
+			where doc_no = #{docNo}
+	</update>
+	
+	<insert id="vaapRegister" parameterType="docVO">
+		insert into vaap_info(
+			doc_no, vaap_amt, vaap_rsn, vac_code, vaap_strt_date, vaap_end_date
+		) values(
+			#{docNo}, #{vaapAmt}, #{vaapRsn}, '10', 
+			to_date(#{vaapStrtDate},'yy/MM/dd HH24:MI'), to_date(#{vaapEndDate},'yy/MM/dd HH24:MI')
+		)
+	</insert>
+	
+	<select id="selectAprList" parameterType="string" resultType="docVO">
+	select (
+			select emp_name from emp where emp.emp_no = apr.emp_no) apr_name, 
+	        apr.emp_no, apr.doc_no, apr.apr_no, apr.apr_stat, apr.apr_rej_conf, 
+	        apr.apr_rej_rsn, apr.apr_job, apr.apr_date, 
+	        (select emp_name from emp where doc.emp_no = emp.emp_no) emp_name, 
+	        clf.doc_clf_code, clf.doc_clf_name, doc.doc_title, doc.doc_cont, 
+	        doc.doc_date, doc.doc_stat, doc.doc_conf_date 
+	    from apr, doc, doc_clf clf
+	    where clf.doc_clf_code = doc.doc_clf_code
+	    	and apr.doc_no = doc.doc_no
+        	and doc.doc_no = #{docNo}
+        	order by apr_no
+	</select>
+	
+	<select id="selectStorageList" parameterType="string" resultType="docVO">
+		select  (
+			select 
+			    emp_name from emp where doc.emp_no = emp.emp_no) emp_name, clf.doc_clf_code, clf.doc_clf_name, 
+			    doc.doc_title, doc.doc_cont, doc.doc_date, doc.doc_stat, doc.doc_conf_date from doc, doc_clf 
+			    clf where clf.doc_clf_code = doc.doc_clf_code and doc.doc_no = #{docNo}
+	</select>
+</mapper>

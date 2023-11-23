@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.arm.ArmMapper">
+	
+	<!-- 개인 알람 목록 조회 -->
+	<select id="selectArmList" parameterType="string" resultType="alarmVO" >
+		SELECT
+    		arm_no, arm_sender, arm_receiver, arm_cont, arm_time, arm_url, arm_stat, arm_sendername, arm_senderimg
+		FROM alarm
+		WHERE arm_receiver = #{armReceiver}
+		ORDER BY arm_time DESC
+	</select>
+	
+	<!-- 알람 추가 -->
+	<insert id="insertArm" parameterType="alarmVO" useGeneratedKeys="true">
+		<selectKey keyProperty="armNo" resultType="string" order="BEFORE">
+			select seq_alarm.nextval from dual
+		</selectKey>
+		INSERT INTO alarm (
+		    arm_no
+		    , arm_sender
+		    , arm_receiver
+		    , arm_cont
+		    , arm_time
+		    , arm_url
+		    , arm_stat
+		    , arm_sendername
+		    , arm_senderimg
+		) VALUES (
+		    #{armNo}
+		  , #{armSender}
+		  , #{armReceiver}
+		  , #{armCont}
+		  , sysdate
+		  , #{armUrl}
+		  , #{armStat}
+		  , #{armSendername}
+		  , #{armSenderimg}
+		)
+	</insert>
+
+	<!-- 알람삭제 -->
+	<delete id="deleteArm" parameterType="string">
+		DELETE FROM alarm
+		WHERE ARM_NO = #{armNo}
+	</delete>	
+	
+	<!-- 알람모두삭제 -->
+	<delete id="deleteArmAll" parameterType="string">
+		DELETE FROM ARM
+		WHERE ARM_RECEIVER = #{armReceiver}
+	</delete>
+
+	<!-- 알람읽음 -->
+	<update id="updateArm" parameterType="string">
+		UPDATE alarm
+		    SET ARM_STAT = 'Y'
+		WHERE
+		    ARM_NO = #{armNo}
+	</update>
+	
+	<!-- 알람모두읽음 -->
+	<update id="updateArmAll" parameterType="string">
+	 	UPDATE alarm
+		    SET ARM_STAT = 'Y'
+		WHERE
+		    ARM_RECEIVER = #{armReceiver}
+	</update>
+	
+</mapper>

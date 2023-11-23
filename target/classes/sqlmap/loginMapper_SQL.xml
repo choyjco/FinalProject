@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.login.LoginMapper">
+
+	<resultMap type="empVO" id="empMap">
+		<id property="empNo" column="EMP_NO"/>
+		<result property="empNo" column="EMP_NO"/>
+		<result property="empPw" column="EMP_PW"/>
+		<result property="empName" column="EMP_NAME"/>
+		<result property="empEname" column="EMP_ENAME"/>
+		<result property="empGen" column="EMP_GEN"/>
+		<result property="empReg1" column="EMP_REG1"/>
+		<result property="empReg2" column="EMP_REG2"/>
+		<result property="empTel" column="EMP_TEL"/>
+		<result property="empAddr1" column="EMP_ADDR1"/>
+		<result property="empAddr2" column="EMP_ADDR2"/>
+		<result property="empEmail" column="EMP_EMAIL"/>
+		<result property="empDate" column="EMP_DATE"/>
+		<result property="empStat" column="EMP_STAT"/>
+		<result property="empWork" column="EMP_WORK"/>
+		<result property="empAcct" column="EMP_ACCT"/>
+		<result property="empBank" column="EMP_BANK"/>
+		<result property="empProfile" column="EMP_PROFILE"/>
+		<result property="empSignature" column="EMP_SIGNATURE"/>
+		<result property="empDept" column="EMP_DEPT"/>
+		<result property="empPos" column="EMP_POS"/>
+		<result property="empRank" column="EMP_RANK"/>
+		<result property="empJob" column="EMP_JOB"/>
+		<result property="empFfile" column="EMP_FFILE"/>
+		<result property="deptName" column="DEPT_NAME"/>
+		<result property="posName" column="POS_NAME"/>
+		<result property="rankName" column="RANK_NAME"/>
+		<result property="jobName" column="JOB_NAME"/>
+		<result property="savePath" column="SAVE_PATH"/>
+		<collection property="authList" resultMap="authMap"/>
+	</resultMap>
+	
+	<resultMap type="empAuth" id="authMap">
+		<result property="empNo" column="EMP_NO"/>
+		<result property="auth" column="EMP_ROLE"/>
+	</resultMap>
+	
+	<select id="loginCheck" parameterType="empVO" resultType="empVO">
+		select
+			EMP_NO, EMP_PW, EMP_NAME, EMP_ENAME, EMP_GEN, EMP_REG1, EMP_REG2, EMP_TEL, EMP_ADDR1, EMP_ADDR2, EMP_EMAIL, EMP_DATE, 
+			EMP_STAT, EMP_WORK, EMP_ACCT, EMP_BANK, EMP_PROFILE, EMP_SIGNATURE, EMP_DEPT, EMP_POS, EMP_RANK, EMP_JOB, EMP_FFILE
+		from emp
+		where EMP_NO = #{empNo}
+		and EMP_PW = #{empPw}
+	</select>
+	
+	<select id="readByUserId" parameterType="string" resultMap="empMap"> 
+		select
+			e.EMP_NO, EMP_PW, EMP_NAME, EMP_ENAME, EMP_GEN, EMP_REG1, EMP_REG2, EMP_TEL, EMP_ADDR1, EMP_ADDR2, EMP_EMAIL, EMP_DATE, 
+			EMP_STAT, EMP_WORK, EMP_ACCT, EMP_BANK, EMP_PROFILE, EMP_SIGNATURE, EMP_DEPT, EMP_POS, EMP_RANK, EMP_JOB, EMP_FFILE, EMP_ROLE,
+			(SELECT COMMON.COM_NAME FROM COMMON WHERE COM_CODE = E.EMP_DEPT) DEPT_NAME,
+			(SELECT COMMON.COM_NAME FROM COMMON WHERE COM_CODE = E.EMP_POS) POS_NAME,
+			(SELECT COMMON.COM_NAME FROM COMMON WHERE COM_CODE = E.EMP_RANK) RANK_NAME,
+            (SELECT COMMON.COM_NAME FROM COMMON WHERE COM_CODE = E.EMP_JOB) JOB_NAME,
+			(SELECT ATTACH.FILE_SAVEPATH FROM ATTACH WHERE E.EMP_PROFILE = ATTACH.FILE_NO ) SAVE_PATH
+		from emp e left outer join emp_auth a on(e.EMP_NO = a.EMP_NO)
+		where e.EMP_NO = #{username}
+	</select>
+	
+	<select id="empSearch" parameterType="string" resultType="empVO">
+		select 
+			EMP_NO, EMP_PW, EMP_NAME, EMP_ENAME, EMP_GEN, EMP_REG1, EMP_REG2, EMP_TEL, EMP_ADDR1, EMP_ADDR2, EMP_EMAIL, EMP_DATE, 
+			EMP_STAT, EMP_WORK, EMP_ACCT, EMP_BANK, EMP_PROFILE, EMP_SIGNATURE, EMP_DEPT, EMP_POS, EMP_RANK, EMP_JOB, EMP_FFILE,
+			(SELECT ATTACH.FILE_SAVEPATH FROM ATTACH WHERE EMP.EMP_PROFILE = ATTACH.FILE_NO ) SAVE_PATH
+		from emp
+		where EMP_NAME like '%' || #{empName} || '%'
+	</select>
+	
+	<select id="findId" parameterType="empVO" resultType="empVO">
+		select 
+			EMP_NO, EMP_NAME, EMP_TEL, EMP_EMAIL
+		from emp
+		where EMP_NAME = #{empName}
+		and EMP_EMAIL = #{empEmail}
+	</select>
+	
+	<select id="findPw" parameterType="empVO" resultType="empVO">
+		select 
+			EMP_NO, EMP_NAME, EMP_TEL, EMP_EMAIL
+		from emp
+		where EMP_NAME = #{empName}
+		and EMP_EMAIL = #{empEmail}
+		and EMP_NO = #{empNo}
+	</select>
+	
+	<update id="resetPw" parameterType="string">
+		update emp
+		set
+			EMP_PW = #{empPw}
+		where
+			EMP_NO = #{empNo}
+	</update>
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

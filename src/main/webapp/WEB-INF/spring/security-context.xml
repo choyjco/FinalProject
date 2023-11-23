@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:security="http://www.springframework.org/schema/security"
+	xsi:schemaLocation="http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+		
+	<!-- 사용자 정의 접근 거부 처리자 빈 -->
+	<bean id="customAccessDenied" class="kr.or.ddit.security.CustomAccessDeniedHandler"/>
+	<!-- 로그인 성공 처리자 빈 -->
+	<bean id="customLoginSuccess" class="kr.or.ddit.security.CustomLoginSuccessHandler"/>
+<!-- 	<bean id="customPasswordEncoder" class="kr.or.ddit.security.CustomNoOpPasswordEncoder"/>	JDBC를 이용한 인증/인가 처리: 비밀번호 암호화 처리기 사용 안 함 -->
+	<bean id="bcryptPasswordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder"/>
+	<!-- UserDetailsService 재정의 -->
+	<bean id="customUserDetailsService" class="kr.or.ddit.security.CustomUserDetailsService"/>
+	
+	<security:http>
+<!-- 		<security:intercept-url pattern="/board/list" access="permitAll"/> -->
+<!-- 		<security:intercept-url pattern="/board/register" access="hasRole('ROLE_MEMBER')"/> -->
+<!-- 		<security:intercept-url pattern="/notice/list" access="permitAll"/> -->
+<!-- 		<security:intercept-url pattern="/notice/register" access="hasRole('ROLE_ADMIN')"/> -->
+		
+		<!-- 폼 기반 인증 기능을 사용한다 : 시큐리티 기본 폼 인증시 사용 -->
+<!-- 		<security:form-login/> -->
+		<security:form-login login-page="/signin" authentication-success-handler-ref="customLoginSuccess"/>
+		
+		<!-- 접근 거부 처리자의 URI를 지정: 5. 접근 거부 처리 시 사용 -->
+<!-- 		<security:access-denied-handler error-page="/accessError"/> -->
+
+		<!-- 사용자 정의 접근 거부 처리자 -->
+		<security:access-denied-handler ref="customAccessDenied"/>
+		
+		<!-- 자동 로그인 적용 : 데이터 소스를 지정하고 테이블을 이용해서 기존 로그인 정보를 기록 - 쿠키의 유효기간은 7일(604800) -->
+		<security:remember-me token-validity-seconds="604800"/>
+<!-- 		<security:remember-me data-source-ref="dataSource" token-validity-seconds="604800"/> -->
+		
+		<security:logout logout-url="/logout" invalidate-session="true" delete-cookies="remember-me, JSESSION_ID"/>
+		
+	</security:http>
+	
+	<security:authentication-manager>
+		<!-- 지정한 아이디와 패스워드로 로그인이 가능하도록 설정 -->
+		<security:authentication-provider user-service-ref="customUserDetailsService">
+<!-- 			<security:user-service> -->
+<!-- 				<security:user name="member" password="{noop}1234" authorities="ROLE_MEMBER"/> -->
+<!-- 				<security:user name="admin" password="{noop}1234" authorities="ROLE_MEMBER, ROLE_ADMIN"/> -->
+<!-- 			</security:user-service> -->
+
+			<!-- JDBC를 사용한 인증/인가 처리 -->
+<!-- 			<security:jdbc-user-service data-source-ref="dataSource"/> -->
+<!-- 			<security:password-encoder ref="customPasswordEncoder"/> -->
+
+			<!-- 사용자 테이블을 이용한 인증/인가 처리 -->
+<!-- 			<security:jdbc-user-service data-source-ref="dataSource" -->
+<!-- 				users-by-username-query="select user_id, user_pw, enabled from member where user_id = ?" -->
+<!-- 				authorities-by-username-query="select m.user_id, ma.auth from member_auth ma, member m where ma.user_no = m.user_no and m.user_id = ?"/> -->
+			<security:password-encoder ref="bcryptPasswordEncoder"/>
+		</security:authentication-provider>
+	</security:authentication-manager>
+</beans>

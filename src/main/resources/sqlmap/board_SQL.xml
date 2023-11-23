@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.board.BoardMapper">
+
+	<resultMap type="boardVO" id="boardMap">
+		<id property="boardNo" column="board_no"/>
+		<result property="boardNo" column="board_no"/>
+		<result property="boardCate" column="board_cate"/>
+		<result property="boardTitle" column="board_title"/>
+		<result property="boardCont" column="board_cont"/>
+		<result property="boardFile" column="board_file"/>
+		<result property="boardWriter" column="board_writer"/>
+		<result property="boardRegdate" column="board_regdate"/>
+		<result property="boardUpddate" column="board_upddate"/>
+		<result property="boardUpdater" column="board_updater"/>
+		<result property="boardEmpno" column="board_empno"/>
+		<collection property="boardFileList" resultMap="boardFileMap"/>
+	</resultMap>
+	
+	<resultMap type="attachVO" id="boardFileMap">
+		<id property="fileNo" column="file_no"/>
+		<result property="fileNo" column="file_no"/>
+		<result property="fileSavepath" column="file_savepath"/>
+		<result property="fileName" column="file_name"/>
+		<result property="fileOrgname" column="file_orgname"/>
+		<result property="fileSize" column="file_size"/>
+		<result property="fileMime" column="file_mime"/>
+		<result property="fileDowncount" column="file_downcount"/>
+		<result property="fileRegdate" column="file_regdate"/>
+		<result property="fileUploader" column="file_uploader"/>
+		<result property="fileRegdate" column="file_regdate"/>
+		<result property="fileDelConf" column="file_del_conf"/>
+		<result property="fileDelDate" column="file_del_date"/>
+		<result property="fileCode" column="file_code"/>
+	</resultMap>
+
+	<sql id="boardSearch">
+		<if test="searchType != null and searchType == 'title'">
+			and (board_title like '%' || #{searchWord} || '%')
+		</if>
+		<if test="searchType != null and searchType == 'writer'">
+			and (board_writer like '%' || #{searchWord} || '%')
+		</if>
+		<if test="searchType != null and searchType == 'both'">
+			or (board_title like '%' || #{searchWord} || '%')
+			or (board_writer like '%' || #{searchWord} || '%')
+		</if>
+	</sql>
+	
+	<select id="selectBoardCount" parameterType="pagingVO" resultType="int">
+		select count(board_no)
+		from board
+		where board_cate like #{boardCate} || '%'
+		<include refid="boardSearch"/>
+	</select>
+	
+	<select id="selectBoardList" parameterType="pagingVO" resultType="boardVO">
+		select
+			b.*
+		from(
+			select
+				a.*, row_number() over (order by a.board_regdate desc) rnum
+			from (
+				select 
+					board_no, board_cate, board_title, board_cont, board_file, 
+					board_writer, board_regdate, board_upddate, board_updater
+				from board
+				where board_cate like #{boardCate} || '%'
+				<include refid="boardSearch"/>
+				order by board_regdate desc
+			) a
+		) b
+		<![CDATA[
+			where b.rnum >= #{startRow} and b.rnum <= #{endRow}
+		]]>
+	</select>
+
+	<insert id="insertBoard" parameterType="boardVO" useGeneratedKeys="true">
+		<selectKey keyProperty="boardNo" resultType="string" order="BEFORE">
+			select seq_board_no.nextval from dual
+		</selectKey>
+		insert into board(
+			board_no, board_cate, board_title, board_cont, board_file, board_writer, board_empno, board_regdate
+		)values(
+			#{boardNo}, #{boardCate}, #{boardTitle}, #{boardCont}, 'a' || #{boardNo}, #{boardWriter}, #{boardEmpno}, sysdate
+		)
+	</insert>
+	
+	<insert id="insertBoardFile" parameterType="attachVO" useGeneratedKeys="true">
+		<selectKey keyProperty="fileNo" resultType="string" order="BEFORE">
+			select seq_attach.nextval from dual
+		</selectKey>
+		insert into attach(
+			file_no, file_savepath, file_name, file_orgname, file_size, file_mime, 
+			file_downcount, file_regdate, file_uploader, file_del_conf, file_del_date, file_code
+		)values(
+			#{fileNo}, #{fileSavepath}, #{fileName}, #{fileOrgname}, #{fileSize}, #{fileMime}, 
+			0, sysdate, #{fileUploader}, #{fileDelConf}, #{fileDelDate}, #{fileCode}
+		)
+	</insert>
+	
+	<select id="selectBoard" parameterType="string" resultMap="boardMap">
+		select  
+			board_no, board_cate, board_title, board_cont, board_file, board_writer, board_empno, board_regdate,
+			file_no, file_savepath, file_name, file_orgname, file_size, file_mime, 
+			file_downcount, file_regdate, file_uploader, file_del_conf, file_del_date, file_code
+		from board left outer join attach on(board_file = file_code)
+		where board_no = #{boardNo}
+	</select>
+	
+	<select id="selectFileInfo" parameterType="string" resultType="attachVO">
+		select 
+			file_no, file_savepath, file_name, file_orgname, file_size, file_mime, 
+			file_downcount, file_regdate, file_uploader, file_del_conf, file_del_date, file_code
+		from attach
+		where file_no = #{fileNo}
+	</select>
+	
+	<update id="downcountFileInfo" parameterType="string">
+		update attach
+		set
+			file_downcount = file_downcount+1
+		where file_no = #{fileNo}
+	</update>
+	
+	<update id="deleteBoardFile" parameterType="string">
+		update attach
+		set
+			FILE_DEL_CONF = 'Y',
+			FILE_DEL_DATE = sysdate
+		where file_code = 'a' || #{fileCode}
+	</update>
+	
+	<delete id="deleteBoard" parameterType="string">
+		delete from board
+		where board_no = #{boardNo}
+	</delete>
+	
+	<delete id="deleteBoardFileList">
+		delete from attach
+		<where> 
+			file_no in 
+			<foreach collection="array" item="fileNo" open="(" close=")" separator=",">
+				#{fileNo}
+			</foreach>
+		</where>
+	</delete>
+	
+	<update id="updateBoard" parameterType="boardVO">
+		update board
+		set
+			board_cate = #{boardCate},
+			board_title = #{boardTitle},
+			board_cont = #{boardCont},
+			board_upddate = sysdate
+		where board_no = #{boardNo}
+	</update>
+
+</mapper>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration
+  PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+
+	<settings>
+		<setting name="mapUnderscoreToCamelCase" value="true"/>
+		<setting name="jdbcTypeForNull" value="NULL" /> 
+	</settings>
+	
+	<typeAliases>
+		<typeAlias type="kr.or.ddit.vo.ScheduleVO" alias="scheduleVO"/>
+		<typeAlias type="kr.or.ddit.vo.CommonVO" alias="commonVO"/>
+		<typeAlias type="kr.or.ddit.vo.EmpVO" alias="empVO"/>
+		<typeAlias type="kr.or.ddit.vo.EmptVO" alias="emptVO"/>
+		<typeAlias type="kr.or.ddit.vo.EmpAuth" alias="empAuth"/>
+		<typeAlias type="kr.or.ddit.vo.DocumentVO" alias="documentVO"/>
+		<typeAlias type="kr.or.ddit.vo.DocVO" alias="docVO"/>
+		<typeAlias type="kr.or.ddit.vo.PaginationInfoVO" alias="pagingVO"/>
+		<typeAlias type="kr.or.ddit.vo.TreeVO" alias="TreeVO"/>
+		<typeAlias type="kr.or.ddit.vo.CustomerVO" alias="customerVO"/>
+		<typeAlias type="kr.or.ddit.vo.InqBoardVO" alias="inqBoardVO"/>
+		<typeAlias type="kr.or.ddit.vo.LibraryVO" alias="libraryVO"/>
+		<typeAlias type="kr.or.ddit.vo.AttachVO" alias="attachVO"/>
+		<typeAlias type="kr.or.ddit.vo.WorkVO" alias="workVO"/>
+		<typeAlias type="kr.or.ddit.vo.VacationVO" alias="vacationVO"/>
+		<typeAlias type="kr.or.ddit.vo.VacationPersonalVO" alias="vacPersonalVO"/>
+		<typeAlias type="kr.or.ddit.vo.BoardVO" alias="boardVO"/>
+		<typeAlias type="kr.or.ddit.vo.HrHxVO" alias="hrhxVO"/>
+		<typeAlias type="kr.or.ddit.vo.FuncInfoVO" alias="funcInfoVO"/>
+		<typeAlias type="kr.or.ddit.vo.LevelInfoVO" alias="levelInfoVO"/>
+		<typeAlias type="kr.or.ddit.vo.PaymentVO" alias="paymentVO"/>
+		<typeAlias type="kr.or.ddit.vo.PaymentDetailVO" alias="paymentDetailVO"/>
+		<typeAlias type="kr.or.ddit.vo.FuncLevelVO" alias="funcLevelVO"/>
+		<typeAlias type="kr.or.ddit.vo.PayVO" alias="payVO"/>
+		<typeAlias type="kr.or.ddit.vo.RecInfoVO" alias="recInfoVO"/>
+		<typeAlias type="kr.or.ddit.vo.FamilyVO" alias="familyVO"/>
+		<typeAlias type="kr.or.ddit.vo.InfoVO" alias="infoVO"/>
+		<typeAlias type="kr.or.ddit.vo.AcadVO" alias="acadVO"/>
+		<typeAlias type="kr.or.ddit.vo.CareerVO" alias="careerVO"/>
+		<typeAlias type="kr.or.ddit.vo.HrDetailVO" alias="hrDetailVO"/>
+		<typeAlias type="kr.or.ddit.vo.SettingsVO" alias="settingsVO"/>
+		<typeAlias type="kr.or.ddit.vo.HrDetailVO" alias="hrDetailVO"/>
+		<typeAlias type="kr.or.ddit.vo.HrHxFormVO" alias="hrHxFormVO"/>
+		<typeAlias type="kr.or.ddit.vo.WorkAplyVO" alias="workaplyVO"/>
+		<typeAlias type="kr.or.ddit.vo.AlarmVO" alias="alarmVO"/>
+		<typeAlias type="kr.or.ddit.vo.SocketVO" alias="socketVO"/>
+		<typeAlias type="kr.or.ddit.vo.VacationAplyVO" alias="vacAplyVO"/>
+		<typeAlias type="kr.or.ddit.vo.StatsVO" alias="statsVO"/>
+		<typeAlias type="kr.or.ddit.vo.GridVO" alias="gridVO"/>
+		<typeAlias type="kr.or.ddit.vo.TodoVO" alias="todoVO"/>
+	</typeAliases>
+
+</configuration>

@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.pay.PayMapper">
+	
+	<select id="list" resultType="empVO">
+	select
+		e.emp_no, emp_name, (select com_name from common where com_code = emp_dept) emp_dept, inc_set_conf, emp_stat
+	from emp e left outer join inc_set i on (e.emp_no = i.emp_no) and inc_set_year = trunc(sysdate,'MM') where inc_set_conf = 'N' and emp_stat != '퇴직완료' order by emp_name
+	</select>
+
+	<select id="inCalList" resultType="payVO">
+	select
+		e.emp_no, emp_name, (select com_name from common where com_code = emp_dept) emp_dept, inc_set_conf, emp_stat
+	from emp e left outer join inc_set i on (e.emp_no = i.emp_no) and inc_set_year = trunc(sysdate,'MM') where inc_set_conf = 'N' and emp_stat != '퇴직완료' order by emp_name
+	</select>
+
+	<select id="searchList" parameterType="payVO" resultType="payVO">
+	select
+		e.emp_no, emp_name, (select com_name from common where com_code = emp_dept) emp_dept, inc_set_conf, emp_stat
+	from emp e left outer join inc_set i on (e.emp_no = i.emp_no) and inc_set_year = trunc(sysdate,'MM')
+	where 1=1
+		and emp_stat != '퇴직완료' 
+		<if test="empName != null">
+			and (e.emp_name like '%'||#{empName}||'%')
+		</if>
+	order by emp_name
+	</select>
+
+	<select id="inCalIng" parameterType="payVO" resultType="payVO">
+	select 
+		e.emp_no
+		, e.emp_name
+		, (
+		   (select 	sup.inc_sup_amt
+			from	inc_sup sup
+			where	sup.inc_sup_name = '기본급')
+			+ 
+		   (select 	c.com_pay
+			from	emp e, common c
+			where	1=1
+			and		e.emp_rank = c.com_code
+			and		e.emp_no = #{empNo})
+		  ) as gibonpay
+		, (
+			select 	c.com_pay
+			from	emp e, common c
+			where	1=1
+			and		e.emp_job = c.com_code
+			and		e.emp_no = #{empNo}
+		  ) as jikpay
+		, NVL(
+		   (ROUND((
+		   (select 	sup.inc_sup_amt
+			from	inc_sup sup
+			where	sup.inc_sup_name = '기본급')
+			+ 
+		   (select 	c.com_pay
+			from	emp e, common c
+			where	1=1
+			and		e.emp_rank = c.com_code
+			and		e.emp_no = #{empNo})
+		  ) / 209) *
+		  (select sum(work_amt)
+			from
+				(select doc_no
+				from doc
+				where emp_no = #{empNo}
+				and doc_clf_code = '2'
+				and doc_stat = '승인') doc, work_aply work
+			where doc.doc_no = work.doc_no)
+		  ),0) as gitapay
+	from emp e
+	where e.emp_no = #{empNo}
+	</select>
+	
+	<update id="inPaying" parameterType="payVO">
+		MERGE 
+		 INTO inc_set a
+		USING dual 
+		   ON (a.inc_set_year = TRUNC(SYSDATE, 'MM') AND a.emp_no = #{empNo})
+		 WHEN MATCHED THEN
+		      UPDATE SET 
+				a.inc_set_sdate	= TRUNC(SYSDATE, 'MM') ,
+				a.inc_set_edate	= last_day(sysdate) ,
+				a.inc_set_date	= last_day(sysdate) ,
+				a.inc_set_amt	= #{incSetAmt} ,
+				a.inc_set_dedt	= #{incSetDedt} ,
+				a.inc_set_res	= #{incSetRes} ,
+				a.inc_set_conf	= 'Y' ,
+				a.inc_set_rdate	= sysdate
+		 WHEN NOT MATCHED THEN
+		      INSERT (
+				    inc_set_sdate,
+				    inc_set_edate,
+				    inc_set_date,
+				    inc_set_amt,
+				    inc_set_dedt,
+				    inc_set_res,
+				    inc_set_year,
+				    inc_set_conf,
+				    inc_set_rdate,
+				    emp_no
+			    ) VALUES (
+				    TRUNC(SYSDATE, 'MM'),
+				    last_day(sysdate),
+				    last_day(sysdate),
+				    #{incSetAmt},
+				    #{incSetDedt},
+				    #{incSetRes},
+				    TRUNC(SYSDATE, 'MM'),
+				    'Y',
+				    sysdate,
+				    #{empNo}
+				)
+	</update>
+	
+	<select id="newEmpList" resultType="payVO">
+		select
+			emp_no
+		from emp
+	</select>
+	
+	<insert id="insertNewMonth" parameterType ="payVO">
+		insert into inc_set (
+			emp_no
+			, inc_set_year
+		) values (
+			#{empNo}
+			, TRUNC(SYSDATE, 'MM')
+		)
+	</insert>
+	
+	<select id="getWorkTime"  parameterType ="payVO" resultType="int">
+		select 	nvl(sum(work_total),0) 
+		from 	work_info 
+		where 	emp_no = #{empNo} 
+		and 	TRUNC(SYSDATE, 'MM') = TRUNC(work_stime, 'MM')
+	</select>
+	
+	<select id="thisMonthMyPay"  parameterType ="payVO" resultType="payVO">
+		select 
+			inc_set_amt, inc_set_dedt, inc_set_res
+		from
+			inc_set
+		where 1=1
+		and	  emp_no = #{empNo}
+		<choose>
+			<when test="month != null and month != ''">
+				and inc_set_year = TRUNC(to_date('2023/'||#{month}||'/01','YYYY/MM/DD'), 'MM')
+			</when>
+			<otherwise>
+				and inc_set_year = TRUNC(add_months(sysdate,-1), 'MM')
+			</otherwise>
+		</choose>		    
+	</select>
+	
+	<select id="thisYearMyPay"  parameterType ="payVO" resultType="int">
+		select 	nvl(sum(inc_set_res),0) 
+		from 	inc_set 
+		where 	emp_no = #{empNo}
+		and 	TRUNC(SYSDATE, 'YYYY') = TRUNC(inc_set_year, 'YYYY')
+	</select>
+
+	<select id="outCalList" resultType="payVO">
+		select 	e.emp_no, emp_name, (select com_name from common where com_code = emp_dept) emp_dept, inc_set_conf, emp_stat 
+		from 	emp e left outer join inc_set i on (e.emp_no = i.emp_no)
+		where  	emp_stat = '퇴직완료' 
+		and  	inc_set_year = trunc(sysdate,'MM')
+        order by emp_name
+	</select>
+	
+	<select id="get3monthPay" parameterType ="payVO" resultType="int">
+		select 
+        		nvl(sum(inc_set_amt),0) as inc_set_amt
+		from 
+		        inc_set
+		where 	1=1
+		and     emp_no = #{empNo}
+		<![CDATA[
+		and     inc_set_year < trunc(sysdate,'MM')
+		and     inc_set_year > add_months(trunc(sysdate,'MM'),-4)
+		]]>
+	</select>
+	
+	<select id="getWorkDays" parameterType ="payVO" resultType="int">
+		SELECT 		(trunc(sysdate)-trunc(emp.emp_date)) as k_date
+        FROM 		emp 
+        LEFT JOIN 	empt ON emp.emp_no = empt.emp_no
+        where 		emp.emp_no=#{empNo}
+	</select>
+	 
+	<select id="middleCalList" resultType="payVO">
+		select 	e.emp_no, emp_name, (select com_name from common where com_code = emp_dept) emp_dept, inc_set_conf, emp_stat 
+		from 	emp e left outer join inc_set i on (e.emp_no = i.emp_no)
+		where  	1=1
+		and  	inc_set_year = trunc(sysdate,'MM')
+        and     inc_set_conf = 'Y'
+        and     emp_stat != '퇴직완료'
+        order by emp_name
+	</select>
+	 
+	<select id="middleCalIng" parameterType="payVO" resultType="payVO">
+		select 	e.emp_no, emp_name, (select com_name from common where com_code = emp_dept) emp_dept, inc_set_conf, emp_stat, inc_set_rdate 
+		from 	emp e left outer join inc_set i on (e.emp_no = i.emp_no)
+		where  	1=1
+		and  	inc_set_year = trunc(sysdate,'MM')
+        and     inc_set_conf = 'Y'
+        and     emp_stat != '퇴직완료'
+        and		e.emp_no = #{empNo}
+        order by emp_name
+	</select>
+
+</mapper>

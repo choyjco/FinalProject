@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.library.LibMapper">
+	
+	<sql id="libSearch">
+		<if test="searchType != null and searchType == 'both'">
+			and (l.lib_title like '%'||#{searchWord}||'%')
+		</if>
+		<if test="searchType != null and searchType == 'title'">
+			and (l.lib_title like '%'||#{searchWord}||'%')
+		</if>
+	</sql>
+	
+	<select id="libList" parameterType="pagingVO" resultType="libraryVO">
+		select * from (
+		    select a.*, row_number() over (order by a.emp_name desc) as rnum
+		    from (
+		        select
+					lib_no, lib_title, lib_regdate, lib_upddate, lib_file_no, lib_category, (select file_name from 
+					attach where l.lib_file_no = attach.file_no) file_name, 
+					(select file_downcount from attach where l.lib_file_no = attach.file_no) lib_downcount, 
+					lib_writer, emp_name from lib_board l, emp e
+				where l.lib_writer = e.emp_no
+            <include refid="libSearch"/>
+            order by l.lib_upddate desc
+		    ) a
+		) b
+		<![CDATA[
+			where b.rnum >= #{startRow} and b.rnum <= #{endRow}
+		]]>
+	</select>
+	
+	<select id="libListCnt" parameterType="pagingVO" resultType="int">
+		select count(*) 
+			from(
+		 		select
+					lib_no, lib_title, lib_regdate, lib_upddate, lib_file_no, lib_category, (select file_name from 
+					attach where l.lib_file_no = attach.file_no) file_name, 
+					(select file_downcount from attach where l.lib_file_no = attach.file_no) lib_downcount, 
+					lib_writer, emp_name from lib_board l, emp e
+				where l.lib_writer = e.emp_no
+	            <include refid="libSearch"/>
+            		order by l.lib_upddate desc
+            )
+	</select>
+	
+	<select id="libSize" resultType="int">
+		select 
+			sum(file_size)/1024/1024/1024/5*100 lib_size
+		from attach, lib_board
+		where 
+			lib_board.lib_file_no = attach.file_no
+	</select>
+	
+	<select id="listCount" resultType="int">
+		select count(lib_no)
+		from lib_board
+	</select>
+	
+	<delete id="deleteLib" parameterType="string">
+		delete from lib_board
+		where lib_no = #{libNo}
+	</delete>
+	
+	<select id="searchList" parameterType="libraryVO" resultType="libraryVO">
+		select
+			lib_no, lib_title, lib_regdate, lib_upddate, lib_file_no, lib_category, 
+			lib_downcount, lib_writer, emp_name
+		from lib_board l left outer join emp e on(l.lib_writer = e.emp_no)
+		where 1=1
+		<if test="libWriter != null and libWriter == 'both'">
+			and (lib_title like '%'||#{libTitle}||'%')
+			or (lib_writer like '%'||#{libTitle}||'%')
+		</if>
+		<if test="libWriter != null and libWriter == 'writer'">
+			and (lib_writer like '%'||#{libTitle}||'%')
+		</if>
+		<if test="libWriter != null and libWriter == 'title'">
+			and (lib_title like '%'||#{libTitle}||'%')
+		</if>
+		order by lib_upddate desc
+	</select>
+	
+	<select id="detail" parameterType="string" resultType="libraryVO">
+		select
+			lib_no, lib_title, lib_regdate, lib_upddate, lib_file_no, lib_category, 
+			lib_downcount, lib_writer
+		from lib_board
+		where lib_no = #{libNo}
+	</select>
+	
+	<insert id="libRegister" parameterType="libraryVO" useGeneratedKeys="true">
+		<selectKey keyProperty="libNo" order="BEFORE" resultType="string">
+			select seq_library.nextval from dual
+		</selectKey>
+		
+		insert into lib_board(
+			lib_no, lib_title, lib_regdate, lib_upddate,
+			lib_file_no, lib_category, lib_downcount, lib_writer
+		) values(
+			#{libNo}, #{libTitle}, sysdate, sysdate,
+			#{libFileNo}, #{libCategory}, 0, #{libWriter}
+		)
+		
+	</insert>
+	
+	<insert id="insertAttach" parameterType="attachVO" useGeneratedKeys="true">
+	<selectKey keyProperty="fileNo" order="BEFORE" resultType="string">
+		select seq_attach.currval from dual
+	</selectKey>
+		insert into attach(file_no, file_savepath, file_name, file_orgname, file_size,
+		 file_mime, file_downcount, file_regdate, file_uploader, file_del_conf, file_code
+		 ) values(
+		 	#{fileNo}, #{fileSavepath}, #{fileName}, #{fileOrgname}, #{fileSize},
+		 	'image/jpeg', 0, sysdate, #{fileUploader}, 'N', 'lib'||#{fileCode}
+		 )
+	</insert>
+	
+	<select id="selectLibNo" resultType="string">
+		select seq_library.currval from dual
+	</select>
+	
+	<delete id="deleteAttach" parameterType="libraryVO">
+		delete from attach
+		where file_code = #{libFileNo}
+	</delete>
+	
+	<select id="selectFileNo" resultType="string">
+		select seq_attach.nextval from dual
+	</select>
+	
+	<update id="updateFileNo" parameterType="libraryVO">
+		update lib_board
+			set
+				lib_file_no = #{libFileNo}
+			where lib_no = #{libNo}
+	</update>
+	
+	<select id="selectAttachInfo" parameterType="string" resultType="attachVO">
+		select 
+			file_no, file_savepath, file_name, file_orgname, file_size, file_mime, 
+			file_downcount, file_regdate, file_uploader, file_del_conf, file_del_date, file_code
+		from attach
+		where file_no = #{libFileNo}
+	</select>
+	
+	<update id="downCountUpdate" parameterType="string">
+		update attach
+			set 
+				file_downcount = file_downcount + 1
+			where file_no = #{libFileNo}
+	</update>
+</mapper>

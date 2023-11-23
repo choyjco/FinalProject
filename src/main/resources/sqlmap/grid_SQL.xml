@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.home.GridMapper">
+
+	<select id="selectGrid" parameterType="string" resultType="gridVO">
+		SELECT
+		    grid_no
+		  , emp_no
+		  , x
+		  , y
+		  , w
+		  , h
+		  , content
+		  , id
+		  , no_move
+		FROM
+		    grid
+		WHERE
+			emp_no = #{empNo}
+	</select>
+	
+	<update id="updateGrid" parameterType="gridVO">
+		UPDATE grid
+		SET
+			x = #{x}
+		  , y = #{y}
+		  , w = #{w}
+		  , h = #{h}
+		WHERE emp_no = #{empNo}
+		AND id = #{id}
+	</update>
+
+
+</mapper>

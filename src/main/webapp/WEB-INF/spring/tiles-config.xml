@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tiles-definitions PUBLIC "-//Apache Software Foundation//DTD Tiles Configuration 3.0//EN" "http://tiles.apache.org/dtds/tiles-config_3_0.dtd">
+<tiles-definitions>
+	
+	<definition name="mainTemplate" template="/WEB-INF/views/tiles/mainTemplate.jsp">
+		<put-attribute name="header" value="/WEB-INF/views/tiles/header.jsp"/>
+		<put-attribute name="aside" value="/WEB-INF/views/tiles/aside.jsp"/>
+		<put-attribute name="footer" value="/WEB-INF/views/tiles/footer.jsp"/>
+	</definition>
+	
+	<definition name="loginTemplate" template="/WEB-INF/views/tiles/loginTemplate.jsp"/>
+	
+	<definition name="login/*" extends="loginTemplate">
+		<put-attribute name="content" value="/WEB-INF/views/login/{1}.jsp"/>
+	</definition>
+	
+<!-- 	<definition name="*" extends="mainTemplate"> -->
+<!-- 		<put-attribute name="content" value="/WEB-INF/views/{1}.jsp"/> -->
+<!-- 	</definition> -->
+	
+<!-- 	<definition name="*/*" extends="mainTemplate"> -->
+<!-- 		<put-attribute name="content" value="/WEB-INF/views/{1}/{2}.jsp"/> -->
+<!-- 	</definition> -->
+	
+<!-- 	<definition name="*/*/*" extends="mainTemplate"> -->
+<!-- 		<put-attribute name="content" value="/WEB-INF/views/{1}/{2}/{3}.jsp"/> -->
+<!-- 	</definition> -->
+	
+<!-- 	<definition name="Homefeed/*" extends="mainTemplate"> -->
+<!-- 		<put-attribute name="content" value="/WEB-INF/views/Homefeed/{1}.jsp"/> -->
+<!-- 	</definition> -->
+	<definition name="document/*" extends="mainTemplate">
+		<put-attribute name="content" value="/WEB-INF/views/document/{1}.jsp"/>
+	</definition>
+	<definition name="emp/*" extends="mainTemplate">
+		<put-attribute name="content" value="/WEB-INF/views/emp/{1}.jsp"/>
+	</definition>
+	<definition name="home/*" extends="mainTemplate">
+		<put-attribute name="content" value="/WEB-INF/views/home/{1}.jsp"/>
+	</definition>
+	<definition name="home/notice/*" extends="mainTemplate">
+		<put-attribute name="content" value="/WEB-INF/views/home/notice/{1}.jsp"/>
+	</definition>
+	<definition name="hr/*" extends="mainTemplate">
+		<put-attribute name="content" value="/WEB-INF/views/hr/{1}.jsp"/>
+	</definition>
+	<definition name="library/*" extends="mainTemplate">
+		<put-attribute name="content" value="/WEB-INF/views/library/{1}.jsp"/>
+	</definition>
+<!-- 	<definition name="login/*" extends="mainTemplate"> -->
+<!-- 		<put-attribute name="content" value="/WEB-INF/views/login/{1}.jsp"/> -->
+<!-- 	</definition> -->
+	<definition name="mypage/*" extends="mainTemplate">
+		<put-attribute name="content" value="/WEB-INF/views/mypage/{1}.jsp"/>
+	</definition>
+	<definition name="pay/*" extends="mainTemplate">
+		<put-attribute name="content" value="/WEB-INF/views/pay/{1}.jsp"/>
+	</definition>
+	<definition name="settings/*" extends="mainTemplate">
+		<put-attribute name="content" value="/WEB-INF/views/settings/{1}.jsp"/>
+	</definition>
+	<definition name="stats/*" extends="mainTemplate">
+		<put-attribute name="content" value="/WEB-INF/views/stats/{1}.jsp"/>
+	</definition>
+	<definition name="vacation/*" extends="mainTemplate">
+		<put-attribute name="content" value="/WEB-INF/views/vacation/{1}.jsp"/>
+	</definition>
+	<definition name="work/*" extends="mainTemplate">
+		<put-attribute name="content" value="/WEB-INF/views/work/{1}.jsp"/>
+	</definition>
+
+	<definition name="mainTemplate2" template="/WEB-INF/views/tiles/mainTemplate2.jsp">
+		<put-attribute name="header2" value="/WEB-INF/views/tiles/header2.jsp"/>
+		<put-attribute name="footer2" value="/WEB-INF/views/tiles/footer2.jsp"/>
+	</definition>
+	
+	<definition name="mainhome/*" extends="mainTemplate2">
+		<put-attribute name="content2" value="/WEB-INF/views/mainhome/{1}.jsp"/>
+	</definition>
+</tiles-definitions>

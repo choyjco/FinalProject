@@ -1,0 +1,643 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.hr.HrMapper">
+
+	<sql id="ghrSearch">
+		<if test="searchType != null and searchType == 'empDept1'">
+			and (emp_name like '%'||#{searchWord}||'%')
+		</if>
+		<if test="searchType != null and searchType == 'empDept2'">
+			and (emp_dept like '%'||#{searchWord}||'%'  or (select com_name from common where com_code = a.emp_dept) like '%' || #{searchWord} || '%')
+		</if>
+		<if test="searchType != null and searchType == 'empDept3'">
+			and (emp_job like '%'||#{searchWord}||'%'  or (select com_name from common where com_code = a.emp_job) like '%' || #{searchWord} || '%')
+		</if>
+	</sql>
+
+	<select id="selectGhrCount" parameterType="pagingVO" resultType="int">
+	    select count(a.emp_name)
+	    from emp a
+	    where 1=1
+	    <if test="keyword!=null and keyword!=''">
+			and a.emp_dept like '%' || #{keyword} || '%'
+		</if>
+		<include refid="ghrSearch"/>
+	    and exists (
+	        select 1
+	        from common b
+	        <choose>
+	            <when test="searchType != null and searchType == 'empDept2'">
+	                <where>
+	                    a.emp_dept = b.com_code
+	                    <include refid="ghrSearch"/>
+	                </where>
+	            </when>
+	            <when test="searchType != null and searchType == 'empDept3'">
+	                , common c
+	                <where>
+	                    a.emp_job = c.com_code
+	                    <include refid="ghrSearch"/>
+	                </where>
+	            </when>
+	        </choose>
+	    )
+	</select>
+	
+	<select id="selectAll" resultType="empVO">
+		select emp_no, emp_profile
+		from emp
+	</select>
+	
+	<select id="selectGhrList" parameterType="pagingVO" resultType="empVO">
+		select B.EMP_NAME, B.EMP_NO, (select com_name from common where com_code = B.emp_dept) EMP_DEPT
+     , (select com_name from common where com_code = B.emp_job) EMP_JOB, B.EMP_PROFILE, B.RNUM from (
+		    select a.*, row_number() over (order by a.emp_name asc) as rnum
+		    from (
+		        select emp_name, emp_no,
+                emp_dept,
+                emp_job,
+                att.file_savepath emp_profile
+		        from emp emp, (select file_no, file_savepath 
+                from attach
+                ) att
+		        where 1=1
+                and emp.emp_profile = att.file_no(+)
+                and emp.emp_stat != '퇴직완료'
+		        order by emp_name asc
+		    ) a
+		    	where 1=1
+				<if test="keyword!=null and keyword!=''">
+					and a.emp_dept like '%' || #{keyword} || '%'
+				</if>
+		        <include refid="ghrSearch"/>
+		) b
+		<![CDATA[
+			where b.rnum >= #{startRow} and b.rnum <= #{endRow}
+		]]>
+	</select> 
+	
+	<!-- ghr, mhr1의 조직도 전체 수 -->
+	<select id="countEmp" resultType="empVO">
+		select count(emp_no) as empCount
+		from emp 
+		where NOT emp_stat = '퇴직완료'
+	</select>
+	
+	<sql id="mhr1Search">
+		<if test="searchType != null and searchType == 'empName'">
+			and (emp.emp_name like '%'||#{searchWord}||'%')
+		</if>
+		<if test="searchType != null and searchType == 'empStat'">
+			and (emp.emp_stat like '%'||#{searchWord}||'%')
+		</if>
+		<if test="searchType != null and searchType == 'empNo'">
+			and (emp.emp_no like '%'||#{searchWord}||'%')
+		</if>
+		<if test="searchType != null and searchType == 'empDate'">
+		    and (TO_CHAR(emp.emp_date, 'YYYY-MM-DD') like '%'||#{searchWord}||'%')
+		</if>
+		<if test="searchType != null and searchType == 'emptEndDate'">
+			and (TO_CHAR(empt.empt_end_date, 'YYYY-MM-DD') like '%'||#{searchWord}||'%')
+		</if>
+		<if test="searchType != null and searchType == 'empWork'">
+			and (emp.emp_work like '%'||#{searchWord}||'%')
+		</if>
+	</sql>
+	
+	<select id="selectMhr1Count" parameterType="pagingVO" resultType="int">
+		select count(emp_name)
+		from emp
+		where 1=1
+		<if test="keyword!=null and keyword!=''">
+			and  emp_dept like '%' || #{keyword} || '%'
+		</if>
+		<include refid="mhr1Search"/>
+	</select>
+	
+	<select id="selectMhr1List" parameterType="pagingVO" resultType="empVO">
+	SELECT b.emp_name, b.emp_stat, b.emp_no, b.emp_date, b.empt_end_date, b.k_date as empKdate, b.emp_work
+		FROM (
+		    SELECT a.*, ROW_NUMBER() OVER (ORDER BY a.emp_name asc) rnum
+		    FROM (
+		        SELECT DISTINCT emp.emp_name, emp.emp_stat, emp.emp_no, emp.emp_date, empt.empt_end_date,(trunc(sysdate)-trunc(emp.emp_date)) as k_date, emp.emp_work
+		        FROM emp
+		        LEFT JOIN empt ON emp.emp_no = empt.emp_no
+		        WHERE 1=1
+		        <if test="keyword!=null and keyword!=''">
+					and emp_dept like '%' || #{keyword} || '%'
+				</if>
+				AND emp.emp_stat != '퇴직완료'
+		        <include refid="mhr1Search"/>
+		    ) a
+		) b
+		<![CDATA[
+			where b.rnum >= #{startRow} and b.rnum <= #{endRow}
+		]]>
+	</select>
+	
+	<!-- 조직도 직원수 구하기 -->
+	<select id="selectTreeTotal" parameterType="String" resultType="int">
+		select count(*)
+		    from emp a
+		    left outer join empt b on a.emp_no = b.emp_no
+		    left outer join common c on c.com_code = a.emp_dept
+		    where c.com_code like '%' || #{comCode} || '%'
+	</select>
+	
+	<select id="selectTreeList" parameterType="String" resultType="empVO">
+		select b.*
+		from (
+		    SELECT t.*, ROW_NUMBER() OVER (ORDER BY emp_name ASC) rnum
+		    FROM (
+		        SELECT
+		            distinct a.emp_name,
+		            a.emp_stat,
+		            a.emp_no,
+		            a.emp_date,
+		            b.empt_end_date,
+		            (TRUNC(SYSDATE) - TRUNC(a.emp_date)) AS empKdate,
+		            a.emp_work,
+		            c.com_code
+		        FROM
+		            emp a
+		            LEFT OUTER JOIN empt b ON a.emp_no = b.emp_no
+		            LEFT OUTER JOIN common c ON c.com_code = a.emp_dept
+		        WHERE
+		            c.com_code LIKE '%' || #{comCode} || '%'
+		            AND a.emp_stat != '퇴직완료'
+		    )t 
+		) b
+		WHERE b.rnum between 1 and 10
+	</select>
+	
+	<select id="selectTreeListG" parameterType="String"  resultType="empVO">
+		select t.*
+		from
+		(
+			select row_number() over(order by a.emp_name asc) rnum, 
+			a.emp_name, a.emp_no, b.com_name as emp_dept, c.com_name as emp_job, att.file_savepath as emp_profile, b.com_code
+			from emp a
+			left outer join attach att on a.emp_profile = att.file_no
+			left outer join common b on a.emp_dept = b.com_code
+			left outer join common c on a.emp_job = c.com_code
+			where b.com_code like '%' || #{comCode} || '%'
+			and a.emp_stat != '퇴직완료'
+		) t
+		where t.rnum between 1 and 10
+	</select>
+	
+	<sql id="mhr12Search">
+		<if test="searchType != null and searchType == 'empName'">
+			and (a.emp_name like '%'||#{searchWord}||'%')
+		</if>
+		<if test="searchType != null and searchType == 'empNo'">
+			and (a.emp_no like '%'||#{searchWord}||'%')
+		</if>
+		<if test="searchType != null and searchType == 'empDept'">
+			and (b.com_name like '%'||#{searchWord}||'%')
+		</if>
+		<if test="searchType != null and searchType == 'empJob'">
+			and (c.com_name like '%'||#{searchWord}||'%')
+		</if>
+		<if test="searchType != null and searchType == 'empStat'">
+			and (a.emp_stat like '%'||#{searchWord}||'%')
+		</if>
+	</sql>
+	
+	<select id="searchMrh12List" parameterType="empVO" resultType="empVO">
+		select a.emp_name, a.emp_no, b.com_name as emp_dept, c.com_name as emp_job, a.emp_stat
+		from (select * from emp where emp_stat != '퇴직완료') a
+		left join common b on a.emp_dept = b.com_code
+		left join common c on a.emp_job = c.com_code
+		where 1=1
+		<include refid="mhr12Search"/>
+		order by emp_name
+	</select>
+	
+	<select id="gridList" resultType="empVO">
+		select a.emp_name, a.emp_no, b.com_name as emp_dept, c.com_name as emp_job, a.emp_stat
+		from (select * from emp where emp_stat != '퇴직완료') a
+		left join common b on a.emp_dept = b.com_code
+		left join common c on a.emp_job = c.com_code
+		where 1=1
+		order by emp_name 
+	</select>
+	
+	<select id="gridStatList" resultType="empVO">
+		select a.emp_name, a.emp_no, b.com_name as emp_dept, c.com_name as emp_job, a.emp_stat
+		from emp a
+		left join common b on a.emp_dept = b.com_code
+		left join common c on a.emp_job = c.com_code
+		where a.emp_stat = '재직중'
+		<include refid="mhr12Search"/>
+		order by emp_name
+	</select>
+	
+	<select id="gridStatList2" resultType="empVO">
+		select a.emp_name, a.emp_no, b.com_name as emp_dept, c.com_name as emp_job, a.emp_stat
+		from emp a
+		left join common b on a.emp_dept = b.com_code
+		left join common c on a.emp_job = c.com_code
+		where a.emp_stat = '휴직중'
+		order by emp_name
+	</select>
+	
+	<select id="gridStatList3" resultType="empVO">
+		select a.emp_name, a.emp_no, b.com_name as emp_dept, c.com_name as emp_job, a.emp_stat
+		from emp a
+		left join common b on a.emp_dept = b.com_code
+		left join common c on a.emp_job = c.com_code
+		where a.emp_stat = '수습중'
+		order by emp_name
+	</select>
+	
+	<select id="gridStatList4" resultType="empVO">
+		select a.emp_name, a.emp_no, b.com_name as emp_dept, c.com_name as emp_job, a.emp_stat
+		from emp a
+		left join common b on a.emp_dept = b.com_code
+		left join common c on a.emp_job = c.com_code
+		where a.emp_stat = '퇴직예정'
+		order by emp_name
+	</select>
+	
+	<update id="modifyMhr12" parameterType="empVO">
+		update emp
+		set
+			emp_stat = #{empStat}
+		where emp_no = #{empNo}
+	</update>
+	
+	<select id="countEmpStat" resultType="empVO">
+		select count(emp_name) as empStatCount1
+		from emp
+		where 1=1
+		and emp_stat = '재직중'
+	</select>
+	
+	<select id="countEmpStat2" resultType="empVO">
+		select count(emp_name) as empStatCount2
+		from emp
+		where 1=1
+		and emp_stat = '휴직중'
+	</select>
+	
+	<select id="countEmpStat3" resultType="empVO">
+		select count(emp_name) as empStatCount3
+		from emp
+		where 1=1
+		and emp_stat = '수습중'
+	</select>
+	
+	<select id="countEmpStat4" resultType="empVO">
+		select count(emp_name) as empStatCount4
+		from emp
+		where 1=1
+		and emp_stat = '퇴직예정'
+	</select>
+	
+	<sql id="mhr2Search">
+		<if test="searchType != null and searchType == 'empName'">
+			and (emp_name like '%'||#{searchWord}||'%')
+		</if>
+		<if test="searchType != null and searchType == 'empNo'">
+			and (emp_no like '%'||#{searchWord}||'%')
+		</if>
+		<if test="searchType != null and searchType == 'empDept'">
+			and (emp_dept like '%'||#{searchWord}||'%')
+		</if>
+		<if test="searchType != null and searchType == 'empPos'">
+			and (emp_pos like '%'||#{searchWord}||'%')
+		</if>
+	</sql>
+
+	<select id="selectMhr2Count" parameterType="pagingVO" resultType="int">
+	    select count(a.emp_name)
+	    from (select * from emp where emp_stat != '퇴직완료') a
+	    where 1=1
+        <choose>
+        	<when test="searchType != null and searchType == 'empName'">
+               and (emp_name like '%'||#{searchWord}||'%')
+            </when>
+        	<when test="searchType != null and searchType == 'empNo'">
+               and (emp_no like '%'||#{searchWord}||'%')
+            </when>
+            <when test="searchType != null and searchType == 'empDept'">
+               and (emp_dept in(select com_code from common where com_name like '%'||#{searchWord}||'%'))
+            </when>
+            <when test="searchType != null and searchType == 'empPos'">
+            	 and (emp_pos in(select com_code from common where com_name like '%'||#{searchWord}||'%'))
+            </when>
+        </choose>
+	</select>
+	
+	<select id="selectMhr2List" parameterType="pagingVO" resultType="empVO">
+		select * from (
+		    select a.*, row_number() over (order by a.emp_name asc) as rnum
+		    from (
+		        select dd.*, 
+		        case
+                    when (select com_name from common where com_code = dd.hr_history) in ('직책 없음', '파트장', '팀장', '실장', '본부장', 'CFO', 'CEO') then ''
+                    else (select com_name from common where com_code = dd.hr_history)
+                end as hr_history_nm
+				from
+			   (select a.emp_name, a.emp_no, b.com_name as emp_dept, c.com_name as emp_pos, cc.hr_history
+		        from (select * from emp where emp_stat != '퇴직완료') a
+		        left outer join common b on a.emp_dept = b.com_code
+		        left outer join common c on a.emp_pos = c.com_code
+                left outer join 
+                (select bb.emp_no, bb.hr_history
+                from
+                (select emp_no, max(hr_no) max_hr_no 
+                from hr_detail
+                group by emp_no) aa, hr_detail bb
+                where aa.max_hr_no = bb.hr_no) cc on a.emp_no = cc.emp_no 
+                ) dd 
+		        order by emp_name
+		    ) a
+		        where 1=1		 
+		        <include refid="mhr2Search"/>
+		) b
+		<![CDATA[
+			where b.rnum >= #{startRow} and b.rnum <= #{endRow}
+		]]>
+	</select>
+	
+	<update id="modifyEmpDept" parameterType="empVO">	
+		update emp
+		set 
+			emp_dept = #{empDept}
+		where emp_no = #{empNo}
+	</update>
+	
+	<update id="modifyEmpPos" parameterType="empVO">	
+		update emp
+		set 
+			emp_pos = #{empPos}
+		where emp_no = #{empNo}
+	</update>
+	
+	<select id="mhr22grid" resultType="recInfoVO">
+		select a.rec_code, a.rec_type, a.rec_name, a.rec_gen, a.rec_stat
+		from rec_info a
+		where a.rec_code not in(select b.rec_code from emp b where b.rec_code is not null)
+		order by a.rec_code desc
+	</select>
+	
+	<insert id="register" parameterType="empVO" useGeneratedKeys="true">
+		<selectKey order="BEFORE" keyProperty="empNo" resultType="String">
+			select TO_CHAR(SYSDATE, 'YYMMDD') || TO_CHAR(seq_emp_no.NEXTVAL, 'FM0000') from dual
+		</selectKey>
+		insert into emp(
+			emp_no, emp_pw
+            , emp_name, emp_ename, emp_gen, emp_reg1, emp_reg2, emp_tel, emp_addr1, emp_addr2, 
+			emp_email, emp_date, emp_stat, emp_work, emp_acct, emp_bank, emp_dept, emp_pos, emp_rank, emp_job, rec_code, emp_profile
+		)
+		select #{empNo},'$2a$10$M76LGa/zele7tBD4P2VE0uGAiG9JQ0iHnSsOJ5EK4nj5vnYx70zZ6'
+		     , rec_name, 'EnglishName', rec_gen, rec_reg1, rec_reg2,rec_phone, rec_addr, rec_addr2
+		     , rec_email,sysdate,'수습중', #{empWork}, rec_acct, rec_bank,fn_get_com_code(#{empDept}),'b001','c001',fn_get_com_code(#{empJob}),#{recCode},#{empProfile}
+		from rec_info where rec_code = #{recCode}
+	</insert>
+	
+	<select id="selectOne" parameterType="empVO" resultType="empVO">
+		select emp_dept
+		from emp
+		where emp_no = #{empNo}
+	</select>
+	
+	<insert id="createAuth" parameterType="empAuth">
+		insert into emp_auth(
+			emp_no, emp_role
+		) values(
+			#{empNo}, #{auth}
+		)
+	</insert>
+	
+	<sql id="mhr3Search">
+		<if test="searchType != null and searchType == 'hrType'">
+			and (hr_type like '%'||#{searchWord}||'%')
+		</if>
+		<if test="searchType != null and searchType == 'hrResp'">
+			and (hr_resp like '%'||#{searchWord}||'%')
+		</if>
+		<if test="searchType != null and searchType == 'hrDate'">
+			and (TO_CHAR(hr_date, 'YYYY-MM-DD') like '%'||#{searchWord}||'%')
+		</if>
+		<if test="searchType != null and searchType == 'hrMemo'">
+			and (hr_memo like '%'||#{searchWord}||'%')
+		</if>
+	</sql>
+	
+	<select id="selectMhr3Count" parameterType="pagingVO" resultType="int">
+		select count(hr_code)
+		from hr_hx
+		where 1=1
+		<include refid="mhr3Search"/>
+	</select>
+	
+	<select id="selectMhr3List" parameterType="pagingVO" resultType="hrhxVO">
+		select
+	         b.*
+	      from(
+	         select
+	            a.*, row_number() over (order by a.hr_code desc) rnum
+	         from(
+	            select 
+	                hr_code, hr_type, hr_resp, hr_date, hr_memo
+	            from hr_hx
+	            where 1=1
+	            <include refid="mhr3Search"/>
+	            order by hr_date desc
+	         ) a
+	      ) b
+		<![CDATA[
+			where b.rnum >= #{startRow} and b.rnum <= #{endRow}
+		]]>
+	</select>
+	
+	<insert id="createHrHxDept" parameterType="hrHxVO" useGeneratedKeys="true">
+	    <selectKey order="BEFORE" keyProperty="hrCode" resultType="String">
+	        select seq_hr_code.nextval from dual
+	    </selectKey>
+	    insert into hr_hx(
+	        hr_code, emp_no, hr_type, hr_date, hr_resp, hr_memo, memo_regdate
+	    )
+	    values (#{hrCode}, #{hrResp}, '부서 이동', sysdate, 
+	            (select emp_name from emp where emp_no = #{hrResp}), #{hrMemo}, '')
+	</insert>
+	
+	<select id="selectHrCode" resultType="string">
+		select seq_hr_code.currval from dual
+	</select>
+	
+	<insert id="insertHrHistory" parameterType="hrDetailVO" useGeneratedKeys="true">
+	    <selectKey order="BEFORE" keyProperty="hrNo" resultType="String">
+	        select seq_hr_no.nextval from dual
+	    </selectKey>
+	    insert into hr_detail(
+	        hr_no, hr_code, hr_name, hr_dept, hr_pos, hr_rank, hr_job, hr_stat, emp_no, hr_history
+	    )
+	    select #{hrNo}, #{hrCode}, #{hrName}, emp_dept, emp_pos, emp_rank, emp_job, emp_stat, #{empNo}, emp_dept
+	    from emp where emp_no = #{empNo}
+	</insert>
+	
+	<insert id="insertHrHistoryPos" parameterType="hrDetailVO" useGeneratedKeys="true">
+	    <selectKey order="BEFORE" keyProperty="hrNo" resultType="String">
+	        select seq_hr_no.nextval from dual
+	    </selectKey>
+	    insert into hr_detail(
+	        hr_no, hr_code, hr_name, hr_dept, hr_pos, hr_rank, hr_job, hr_stat, emp_no, hr_history
+	    )
+	    select #{hrNo}, #{hrCode}, #{hrName}, emp_dept, emp_pos, emp_rank, emp_job, emp_stat, #{empNo}, emp_pos
+	    from emp where emp_no = #{empNo}
+	</insert>
+	
+	<insert id="createHrHxDetail" parameterType="hrDetailVO" useGeneratedKeys="true">
+	    <selectKey order="BEFORE" keyProperty="hrNo" resultType="String">
+	        select seq_hr_no.nextval from dual
+	    </selectKey>
+	    insert into hr_detail(
+	        hr_no, hr_code, hr_name, hr_dept, hr_pos, hr_rank, hr_job, hr_stat, emp_no, hr_history
+	    )
+	    select #{hrNo}, #{hrCode}, #{hrName}, emp_dept, emp_pos, emp_rank, emp_job, emp_stat, #{empNo}, ''
+	    from emp where emp_no = #{empNo}
+	</insert>
+	
+	<update id="updateHrHxDetail" parameterType="hrDetailVO">	
+		UPDATE hr_detail
+		SET hr_dept = (SELECT emp_dept FROM emp WHERE emp_no = #{empNo})
+		WHERE hr_no = #{hrNo}
+	</update>
+	
+	<update id="updateHrHxDetailPos" parameterType="hrDetailVO">	
+		UPDATE hr_detail
+		SET hr_pos = (SELECT emp_pos FROM emp WHERE emp_no = #{empNo})
+		WHERE hr_no = #{hrNo}
+	</update>
+	
+	<insert id="createEmpt" parameterType="emptVO" useGeneratedKeys="true">
+	    <selectKey order="BEFORE" keyProperty="emptNo" resultType="String">
+	        select seq_empt_no.nextval from dual
+	    </selectKey>
+	    insert into empt(
+	        empt_no, emp_no, empt_stat, empt_memo, empt_date, empt_end_date
+	    )
+	    select #{emptNo}, #{empNo}, hr_stat, hr_memo, sysdate, ''
+		from hr_hx hhx
+		join hr_detail hdt on hhx.hr_code = hdt.hr_code
+		where hdt.hr_code = #{hrCode}
+	</insert>
+	
+	<insert id="createHrHxPos" parameterType="hrHxVO" useGeneratedKeys="true">
+	    <selectKey order="BEFORE" keyProperty="hrCode" resultType="String">
+	        select seq_hr_code.nextval from dual
+	    </selectKey>
+	    insert into hr_hx(
+	        hr_code, emp_no, hr_type, hr_date, hr_resp, hr_memo, memo_regdate
+	    )
+	    values (#{hrCode}, #{hrResp}, '승진', sysdate, 
+	            (select emp_name from emp where emp_no = #{hrResp}), #{hrMemo}, '')
+	</insert>
+	
+	<insert id="createHrHxStat" parameterType="hrHxVO" useGeneratedKeys="true">
+	    <selectKey order="BEFORE" keyProperty="hrCode" resultType="String">
+	        select seq_hr_code.nextval from dual
+	    </selectKey>
+	    insert into hr_hx(
+	        hr_code, emp_no, hr_type, hr_date, hr_resp, hr_memo, memo_regdate
+	    )
+	    values (#{hrCode}, #{hrResp}, '재직상태', sysdate, 
+	            (select emp_name from emp where emp_no = #{hrResp}), '', '')
+	</insert>
+	
+	<select id="selectMhr3DeptCount" parameterType="pagingVO" resultType="int">
+		select count(hr_date)
+		from hr_hx
+		where 1=1
+		and hr_type like '%'||#{searchWord, jdbcType=VARCHAR}||'%'
+	</select>
+	
+	<select id="selectMhr3DeptList" parameterType="pagingVO" resultType="hrDetailVO">
+		select
+		    b.*
+		from(
+		    select
+		        a.*, row_number() over (order by a.hr_name desc) rnum
+		    from(
+		        select 
+		            a.hr_name, a.emp_no, b.com_name as hr_dept, d.com_name as hr_pos, (select com_name from common where com_code = hr_history) as hr_history, hr_stat
+		        from hr_detail a
+		        left join common b on a.hr_dept = b.com_code
+		        left join common d on a.hr_pos = d.com_code
+		        left join hr_hx c on a.hr_code = c.hr_code
+		        where a.hr_code = c.hr_code
+		        and c.hr_code like '%'||#{searchWord}||'%' 
+		        order by a.emp_no desc
+		    ) a
+		) b
+		<![CDATA[
+			where b.rnum >= #{startRow} and b.rnum <= #{endRow}
+		]]>
+	</select>
+	
+	<insert id="insertProfile" parameterType="attachVO">
+		<selectKey keyProperty="fileNo" resultType="string" order="BEFORE">
+			select seq_attach.nextval from dual
+		</selectKey>
+		insert into attach(
+			file_no, file_savepath, file_name, file_orgname, file_size, file_mime, 
+			file_downcount, file_regdate, file_uploader, file_del_conf, file_code
+		)values(
+			#{fileNo}, #{fileSavepath}, #{fileName}, #{fileOrgname}, #{fileSize}, 'image/jpeg', 
+			0, sysdate, #{fileUploader}, 'N', concat('e', #{fileUploader})
+		)
+	</insert>
+	
+	<select id="selectEmpNo" resultType="string">
+		select TO_CHAR(SYSDATE, 'YYMMDD') || TO_CHAR(seq_emp_no.currval, 'FM0000') from dual
+	</select>
+	
+	<update id="modifyMemo" parameterType="hrHxVO">	
+		update hr_hx
+		set 
+			hr_memo = #{hrMemo}
+		where hr_code = #{hrCode}
+	</update>
+	
+	<!-- <select id="selectFileNo" resultType="string">
+		select seq_attach.currval from dual
+	</select>
+	
+	<update id="empProfileUpdate" parameterType="empVO">
+		update emp
+		set
+			emp_profile = #{empProfile}
+		where emp_no = #{empNo}
+	</update> -->
+	
+	<select id="excelMhr1List" parameterType="empVO" resultType="empVO">
+		select * 
+		from emp
+	</select>
+	
+	<select id="excelGhrList" parameterType="empVO" resultType="empVO">
+		select a.emp_name, b.com_name as emp_dept, c.com_name as emp_pos
+		from emp a
+		left join common b on a.emp_dept = b.com_code
+		left join common c on a.emp_pos = c.com_code
+	</select>
+	
+	<select id="selectCus" resultType="customerVO">
+	select *
+	from customer
+	where cus_rnum = '1028142945'
+	</select>
+	
+	<select id="selectAttach" parameterType="customerVO" resultType="attachVO">
+		select *
+		from attach
+		where file_no = #{cusImage}
+	</select>
+	
+</mapper>

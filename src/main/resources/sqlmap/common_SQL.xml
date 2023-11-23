@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mapper.common.CommonMapper">
+
+	<select id="selectCommon" parameterType="string" resultType="string">
+		select 
+			com_name
+		from common
+		where com_code = #{code}
+	</select>
+	
+	<select id="selectCommonList" parameterType="string" resultType="treeVO">
+		select 
+			com_code, com_name
+		from common
+		where com_upcode = #{upcode}
+	</select>
+
+	<select id="selectAllCommon" resultType="commonVO">
+		select 
+			*
+		from common
+	</select>
+
+
+</mapper>
