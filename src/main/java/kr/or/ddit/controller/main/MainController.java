@@ -41,7 +41,14 @@ public class MainController {
 	@Inject
 	private IMainAdminService mainAdminService;
 	
-	// 판매페이지 문의게시판 리스트
+	/**
+	 * 판매페이지 문의게시판 리스트
+	 * @param currentPage
+	 * @param searchType
+	 * @param searchWord
+	 * @param model
+	 * @return
+	 */
 	@RequestMapping(value = "/askboard", method = RequestMethod.GET)
 	public String askBoard(
 			@RequestParam(name="page", required = false, defaultValue = "1") int currentPage,
@@ -69,11 +76,15 @@ public class MainController {
 		
 		model.addAttribute("pagingVO", pagingVO);
 		
-//		model.addAttribute("inqBoardList", inqBoardList);
 		return "mainhome/askBoard";
 	}
 
-	// 판매페이지 문의게시판 등록 화면
+	/**
+	 * 판매페이지 문의게시판 등록 화면
+	 * @param session
+	 * @param ra
+	 * @return
+	 */
 	@RequestMapping(value = "/askform", method = RequestMethod.GET)
 	public String askInsertForm(HttpSession session, RedirectAttributes ra) {
 		
@@ -92,7 +103,15 @@ public class MainController {
 		return goPage;
 	}
 	
-	// 판매페이지 문의게시판 등록
+	/**
+	 * 판매페이지 문의게시판 등록(insert)
+	 * @param req
+	 * @param session
+	 * @param ra
+	 * @param inqBoardVO
+	 * @param model
+	 * @return
+	 */
 	@RequestMapping(value = "/askinsert", method = RequestMethod.POST)
 	public String askInsert(
 			HttpServletRequest req,
@@ -109,24 +128,28 @@ public class MainController {
 		
 		if(customerVO != null) {
 			customerVO.setCusRnum(customerVO.getCusRnum());
-			log.info("문의게시판 등록등록!!!!!!!!!!!!");
 			
 			ServiceResult result = mainService.insertBoard(req, inqBoardVO);
 			if(result.equals(ServiceResult.OK)) {
 				ra.addFlashAttribute("message", "문의글이 등록되었습니다!");
 				goPage = "redirect:/askdetail?inqNo=" + inqBoardVO.getInqNo();
-				log.info("등록잘됨!!!!!!!!!!!!");
+				log.info("문의게시판 등록 성공!!!!!");
 			}else {
 				model.addAttribute("message", "서버오류입니다. 다시 시도해주세요!");
 				goPage = "mainhome/askForm";
-				log.info("등록 서버오류~~~~~~~~~~~~~");
+				log.info("문의게시판 등록 서버오류!!!!!");
 				
 			}
 		}
 		return goPage;
 	}
 
-	// 판매페이지 문의게시판 상세
+	/**
+	 * 판매페이지 문의게시판 상세보기
+	 * @param inqNo
+	 * @param model
+	 * @return
+	 */
 	@RequestMapping(value = "/askdetail", method = RequestMethod.GET)
 	public String askDetail(int inqNo, Model model) {
 		log.info("askDetail() 실행~~~~~");
@@ -134,8 +157,13 @@ public class MainController {
 		model.addAttribute("inqBoard", inqBoardVO);
 		return "mainhome/askDetail";
 	}
-	
-	// 판매페이지 문의게시판 수정 화면
+
+	/**
+	 * 판매페이지 문의게시판 수정 화면
+	 * @param inqNo
+	 * @param model
+	 * @return
+	 */
 	@RequestMapping(value = "/askupdate", method = RequestMethod.GET)
 	public String askUpdateForm(int inqNo, Model model) {
 		log.info("askUpdateForm() 실행~~~~~");
@@ -145,7 +173,14 @@ public class MainController {
 		return "mainhome/askForm";
 	}
 	
-	// 판매페이지 문의게시판 수정
+	/**
+	 * 판매페이지 문의게시판 수정(update)
+	 * @param req
+	 * @param ra
+	 * @param inqBoardVO
+	 * @param model
+	 * @return
+	 */
 	@RequestMapping(value = "/askupdate", method = RequestMethod.POST)
 	public String askUpdate(
 			HttpServletRequest req,
@@ -166,7 +201,17 @@ public class MainController {
 		return goPage;
 	}
 	
-	// 판매페이지 문의게시판 답글
+	/**
+	 * 판매페이지 문의게시판 답변 등록
+	 * @param req
+	 * @param ra
+	 * @param session
+	 * @param inqBoardVO
+	 * @param model
+	 * @return
+	 * @throws UnsupportedEncodingException
+	 * @throws MessagingException
+	 */
 	@RequestMapping(value = "/askreply", method = RequestMethod.POST)
 	public String askReply(
 			HttpServletRequest req,
@@ -182,7 +227,7 @@ public class MainController {
 			ra.addFlashAttribute("message", "답변 등록이 완료되었습니다!");
 			goPage = "redirect:/askdetail?inqNo=" + inqBoardVO.getInqNo();
 //			mainService.sendReplyMail(inqBoardVO);
-			log.info("문의게시판 답글 inqBoardVO 값!!!!!!!!!" + inqBoardVO);
+			log.info("문의게시판 답변 inqBoardVO 값 확인 : {}", inqBoardVO);
 			
 		}else {
 			model.addAttribute("message", "답변 등록에 실패하였습니다.");
@@ -193,7 +238,14 @@ public class MainController {
 		return goPage;
 	}
 	
-	// 판매페이지 문의게시판 삭제
+	/**
+	 * 판매페이지 문의게시판 삭제
+	 * @param req
+	 * @param ra
+	 * @param inqNo
+	 * @param model
+	 * @return
+	 */
 	@RequestMapping(value = "/askdelete", method = RequestMethod.POST)
 	public String askDelete(HttpServletRequest req, RedirectAttributes ra, int inqNo, Model model) {
 		log.info("askDelete() 실행~~~~~");
@@ -212,7 +264,14 @@ public class MainController {
 		return goPage;
 	}
 
-	// 레벨, 기능 선택 페이지
+	/**
+	 * 레벨, 기능 선택 페이지 화면
+	 * @param session
+	 * @param req
+	 * @param ra
+	 * @param model
+	 * @return
+	 */
 	@RequestMapping(value = "/subscribeform", method = RequestMethod.GET)
 	public String subscribeForm(
 			HttpSession session, HttpServletRequest req,
@@ -225,13 +284,11 @@ public class MainController {
 		try {
 		    CustomerVO customer = (CustomerVO) session.getAttribute("SessionInfo");
 		    if (customer != null) {
-		    	log.info("구매 페이지 세션 아이디 값!!!!!" + customer.getCusRnum());
+		    	log.info("구매 페이지 세션 아이디 값 : {}", customer.getCusRnum());
 		        goPage = "mainhome/subscribeForm";
 		    } else {
 		    	ra.addFlashAttribute("message", "로그인 후에 이용해주세요!");
 		        goPage = "redirect:/mainlogin";
-//		        String referer = req.getHeader("Referer");
-//		        goPage = "redirect:" + referer;
 		    }
 		} catch (NullPointerException e) {
 		    log.error("NullPointerException occurred: " + e.getMessage());
@@ -240,19 +297,27 @@ public class MainController {
 		return goPage;
 	}
 	
-	// 레벨, 기능 선택 페이지
+	/**
+	 * 레벨, 기능 선택
+	 * @param req
+	 * @param session
+	 * @param ra
+	 * @param paymentVO
+	 * @param model
+	 * @return
+	 */
 	@RequestMapping(value = "/subscribe", method = RequestMethod.POST)
 	public String subscribe(
 			HttpServletRequest req, HttpSession session,
 			RedirectAttributes ra, PaymentVO paymentVO, Model model) {
 		log.info("subscribe() 실행~~~~~");
-		log.info("paymentVO!!!!!!!!!!!!!!!" + paymentVO);
+		log.info("paymentVO 값 : {}", paymentVO);
 
 		String goPage = "";
 
 		// 세션
 		CustomerVO customer = (CustomerVO) session.getAttribute("SessionInfo");
-		log.info("구매 페이지 세션 아이디 값!!!!!" + customer.getCusRnum());
+		log.info("구매 페이지 세션 아이디 값 : {}", customer.getCusRnum());
 
 		if (customer != null) {
 			paymentVO.setCusRnum(customer.getCusRnum());
@@ -271,7 +336,15 @@ public class MainController {
 		return goPage;
 	}
 	
-	// 레벨, 기능 선택 페이지2
+	/**
+	 * 선택한 레벨, 기능 확인 페이지
+	 * @param req
+	 * @param ra
+	 * @param session
+	 * @param model
+	 * @param payCode
+	 * @return
+	 */
 	@RequestMapping(value = "/subscribe2", method = RequestMethod.GET)
 	public String subscribe2(
 			HttpServletRequest req,
@@ -297,6 +370,11 @@ public class MainController {
 		return goPage;
 	}
 	
+	/**
+	 * 기능, 레벨 선택 페이지 - 가장 많이 선택된 기능 차트
+	 * @param model
+	 * @return
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/funcchart1", method = RequestMethod.POST)
 	public String funcChart(Model model) {
@@ -324,12 +402,16 @@ public class MainController {
 		
 		String json = gson.toJson(jArray);
 		model.addAttribute("json", json);
-		log.info("json 변환!!!!!" + json);
+		log.info("json 변환 : {}", json);
 		
 		return json;
 	}
 	
-	// 차트
+	/**
+	 * 기능, 레벨 선택 페이지 - 가장 많이 선택된 레벨 차트
+	 * @param model
+	 * @return
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/levelchart1", method = RequestMethod.POST)
 	public String levelChart(Model model) {
@@ -337,11 +419,8 @@ public class MainController {
 		
 		List<PaymentVO> list = mainAdminService.selectLevelName();
 		
-		
 		Gson gson = new Gson();
 		JsonArray jArray = new JsonArray();
-		
-//			DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
 		
 		Iterator<PaymentVO> it = list.iterator();
 		while(it.hasNext()) {
@@ -351,23 +430,18 @@ public class MainController {
 			int cnt = paymentVO.getLevelCnt();
 			int ratio = paymentVO.getLevelRatio();
 			
-//				Date dt = paymentVO.getPayDate();
-//				String payDate = df.format(dt);
-			
 			object.addProperty("levelName", levelName);
 			object.addProperty("cnt", cnt);
 			object.addProperty("ratio", ratio);
-//				object.addProperty("payDate", payDate);
 			jArray.add(object);
 			
 		}
 		
 		String json = gson.toJson(jArray);
 		model.addAttribute("json", json);
-		log.info("json 변환!!!!!" + json);
+		log.info("json 변환 : {}", json);
 		
 		return json;
 	}
-	
 	
 }

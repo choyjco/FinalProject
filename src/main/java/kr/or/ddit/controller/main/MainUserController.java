@@ -35,12 +35,17 @@ public class MainUserController {
 	@Inject
 	private IMainUserService mainUserService;
 	
-	
 	@Autowired
 	private PasswordEncoder pe;		// 비밀번호 암호화
 
-	
-	// 구매 내역(회원) 
+	/**
+	 * 구매 내역(회원)
+	 * @param cusRnum
+	 * @param model
+	 * @param session
+	 * @param ra
+	 * @return
+	 */
 	@RequestMapping(value = "/mypageuser/purchasehistory", method = RequestMethod.GET)
 	public String purchaseHistory(
 			String cusRnum, Model model,
@@ -52,7 +57,7 @@ public class MainUserController {
 		CustomerVO customer = (CustomerVO) session.getAttribute("SessionInfo");
 		if(customer != null) {
 			CustomerVO customerVO = mainUserService.selectPaymentListU(cusRnum);
-			log.info("purchaseHistory->customerVO : " + customerVO);
+			log.info("purchaseHistory->customerVO : {}", customerVO);
 			
 			if(customerVO != null) {
 				model.addAttribute("customerVO", customerVO);
@@ -71,7 +76,14 @@ public class MainUserController {
 		return goPage;
 	}
 	
-	// 회원 정보 수정 전 비밀번호 확인(회원)
+	/**
+	 * 회원 정보 수정 전 비밀번호 확인 화면(회원)
+	 * @param customerVO
+	 * @param session
+	 * @param model
+	 * @param ra
+	 * @return
+	 */
 	@RequestMapping(value = "/mypageuser/userpwcheck", method = RequestMethod.GET)
 	public String userPwCheckGet(
 			CustomerVO customerVO,
@@ -90,6 +102,15 @@ public class MainUserController {
 		return goPage;
 	}
 	
+	/**
+	 * 회원 정보 수정 전 비밀번호 확인(회원)
+	 * @param pw
+	 * @param ra
+	 * @param session
+	 * @param customerVO
+	 * @param model
+	 * @return
+	 */
 	@RequestMapping(value = "/mypageuser/userpwchecking", method = RequestMethod.POST)
 	public String userPwCheckPost(
 			@RequestParam("cusPw") String pw,
@@ -118,6 +139,14 @@ public class MainUserController {
 	
 		
 	// 회원 정보 상세(회원)
+	/**
+	 * 회원 정보 상세보기(회원)
+	 * @param session
+	 * @param ra
+	 * @param cusRnum
+	 * @param model
+	 * @return
+	 */
 	@RequestMapping(value = "/mypageuser/memberdetail", method = RequestMethod.GET)
 	public String memberDetail(
 			HttpSession session, RedirectAttributes ra,
@@ -129,7 +158,7 @@ public class MainUserController {
 		if(customer != null) {
 			CustomerVO customerVO = mainUserService.selectMemberDetail(cusRnum);
 			model.addAttribute("customer", customerVO);
-			log.info("파일경로!!!!!!!!!!!" + customerVO.getCusImage());
+			log.info("회원 정보 상세보기 파일 경로 : {}", customerVO.getCusImage());
 			goPage = "mainhome/memberDetail";
 		}else {
 			ra.addFlashAttribute("message", "로그인 정보가 없습니다! 메인 화면으로 돌아갑니다!");
@@ -139,15 +168,24 @@ public class MainUserController {
 		return goPage;
 	}
 		
-	// 판매페이지 문의게시판 리스트(회원)
+	/**
+	 * 판매페이지 문의게시판 리스트(회원)
+	 * @param currentPage
+	 * @param searchType
+	 * @param searchWord
+	 * @param model
+	 * @param session
+	 * @param ra
+	 * @return
+	 */
 	@RequestMapping(value = "/mypageuser/userboard", method = RequestMethod.GET)
-	public String adminBoard(
+	public String userBoard(
 			@RequestParam(name="page", required = false, defaultValue = "1") int currentPage,
 			@RequestParam(required = false, defaultValue = "title") String searchType,
 			@RequestParam(required = false) String searchWord,
 			Model model, HttpSession session, RedirectAttributes ra) {
 		
-		log.info("adminBoard() 실행~~~~~");
+		log.info("userBoard() 실행~~~~~");
 		
 		String goPage = "";
 		

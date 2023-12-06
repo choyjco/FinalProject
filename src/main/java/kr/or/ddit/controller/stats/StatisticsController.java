@@ -61,7 +61,11 @@ public class StatisticsController {
 		return "stats/list";
 	}
 	
-	
+	/**
+	 * 사원 성별 차트
+	 * @param model
+	 * @return
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/genderchart", method = RequestMethod.POST)
 	public String genderRateChart(Model model) {
@@ -89,11 +93,16 @@ public class StatisticsController {
 		
 		String json = gson.toJson(jArray);
 		model.addAttribute("json", json);
-		log.info("json 변환!!!!!" + json);
+		log.info("json 변환 : {}", json);
 		
 		return json;
 	}
 	
+	/**
+	 * 연도별 채용 인원 수 차트
+	 * @param model
+	 * @return
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/recruityearchart", method = RequestMethod.POST)
 	public String RecruitYearChart(Model model) {
@@ -122,12 +131,16 @@ public class StatisticsController {
 		}
 		String json = gson.toJson(jArray);
 		model.addAttribute("json", json);
-		log.info("json 변환!!!!!" + json);
+		log.info("json 변환 : {}", json);
 		
 		return json;
 	}
 	
-	
+	/**
+	 * 근무 시간 차트
+	 * @param model
+	 * @return
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/workinfochart", method = RequestMethod.POST)
 	public String workInfoChart(Model model) {
@@ -138,8 +151,6 @@ public class StatisticsController {
 		Gson gson = new Gson();
 		JsonArray jArray = new JsonArray();
 		
-//		DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-		
 		Iterator<StatsVO> it = list.iterator();
 		while(it.hasNext()) {
 			StatsVO statsVO = it.next();
@@ -147,21 +158,14 @@ public class StatisticsController {
 			String empNo = statsVO.getEmpNo();
 			int totalWork = statsVO.getTotalWork();
 			
-//			Date dt = statsVO.getWorkStime();
-//			String workStime = df.format(dt);
-			
-//			String format = "yyyy-MM-dd";
-//			SimpleDateFormat sdf = new SimpleDateFormat(format);
-			
 			object.addProperty("empNo", empNo);
 			object.addProperty("totalWork", totalWork);
-//			object.addProperty("workStime", workStime);
 			jArray.add(object);
 		
 		}
 		String json = gson.toJson(jArray);
 		model.addAttribute("json", json);
-		log.info("json 변환!!!!!" + json);
+		log.info("json 변환 : {}", json);
 		
 		return json;
 	}

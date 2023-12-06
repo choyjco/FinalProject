@@ -40,15 +40,7 @@ public class MainAdminController {
 	
 	
 	String goPage = "";
-//	CustomerVO customerVO = (CustomerVO) session.getAttribute("SessionInfo");
-//	if(customerVO.getCusRnum().equals("admin")) {
-//		goPage = "mainhome/mypageAdmin";
-//	}else {
-//		ra.addFlashAttribute("message", "권한이 없습니다!");
-//		goPage = "redirect:/main";
-//	}
-//	
-//	return goPage;
+
 	
 	/**
 	 * 판매페이지 회원 목록(관리자)
@@ -96,6 +88,14 @@ public class MainAdminController {
 		return goPage;
 	}
 	
+	/**
+	 * 판매페이지 회원 상세(관리자)
+	 * @param cusRnum
+	 * @param model
+	 * @param session
+	 * @param ra
+	 * @return
+	 */
 	@RequestMapping(value = "/mypageadmin/customerdetail", method = RequestMethod.GET)
 	public String customerDetail(
 			String cusRnum, Model model,
@@ -107,7 +107,7 @@ public class MainAdminController {
 		
 		if(customer != null) {
 			CustomerVO customerVO = mainAdminService.selectCustomer(cusRnum);
-			log.info("확인용!!!!!!!!!!!!!" + customerVO.getCusRnum());
+			log.info("판매페이지 회원 상세 사업자번호 : {}" , customerVO.getCusRnum());
 			model.addAttribute("customer", customerVO);
 			goPage = "mainhome/customerDetail";
 			
@@ -119,7 +119,13 @@ public class MainAdminController {
 		return goPage;
 	}
 	
-	// 기능 리스트 화면(관리자)
+	/**
+	 * 기능 리스트 화면(관리자)
+	 * @param model
+	 * @param session
+	 * @param ra
+	 * @return
+	 */
 	@RequestMapping(value = "/mypageadmin/funclist", method = RequestMethod.GET)
 	public String funcInfo(Model model, HttpSession session, RedirectAttributes ra) {
 		log.info("funcInfo() 실행~~~~~");
@@ -138,7 +144,12 @@ public class MainAdminController {
 		return goPage;
 	}
 	
-	// 기능 추가 양식
+	/**
+	 * 기능 추가 양식(form)
+	 * @param session
+	 * @param ra
+	 * @return
+	 */
 	@RequestMapping(value = "/mypageadmin/funcform", method = RequestMethod.GET)
 	public String funcInsertForm(HttpSession session, RedirectAttributes ra) {
 		log.info("funcInsertForm() 실행~~~~~");
@@ -156,7 +167,15 @@ public class MainAdminController {
 		return goPage;
 	}
 
-	// 기능 추가
+	/**
+	 * 기능 추가(insert)
+	 * @param req
+	 * @param session
+	 * @param ra
+	 * @param funcInfoVO
+	 * @param model
+	 * @return
+	 */
 	@RequestMapping(value = "/mypageadmin/funcinsert", method = RequestMethod.POST)
 	public String levelInsert(
 			HttpServletRequest req, 
@@ -173,11 +192,11 @@ public class MainAdminController {
 			if (result.equals(ServiceResult.OK)) {
 				ra.addFlashAttribute("message", "기능이 추가되었습니다!");
 				goPage = "redirect:/mypageadmin/funcdetail?funcName=" + funcInfoVO.getFuncName();
-				log.info("등록잘됨!!!!!!!!!!!!");
+				log.info("기능 등록 성공!!!!!");
 			} else {
 				model.addAttribute("message", "서버오류입니다. 다시 시도해주세요!");
 				goPage = "mainhome/funcForm";
-				log.info("등록 서버오류~~~~~~~~~~~~~");
+				log.info("기능 등록 서버 오류!!!!!");
 			}
 			
 		}else {
@@ -189,7 +208,14 @@ public class MainAdminController {
 		
 	}
 	
-	// 기능 상세보기
+	/**
+	 * 기능 상세보기
+	 * @param funcName
+	 * @param model
+	 * @param session
+	 * @param ra
+	 * @return
+	 */
 	@RequestMapping(value = "/mypageadmin/funcdetail", method = RequestMethod.GET)
 	public String funcDetail(String funcName, Model model,
 			HttpSession session, RedirectAttributes ra) {
@@ -201,7 +227,7 @@ public class MainAdminController {
 		if(customer != null) {
 			FuncInfoVO funcInfoVO = mainAdminService.selectFunc(funcName);
 			model.addAttribute("funcInfo", funcInfoVO);
-			log.info("상세 값 확인!!!!!!" + funcName);
+			log.info("기능 이름 확인 : {}", funcName);
 			goPage = "mainhome/funcDetail";
 		}else {
 			ra.addFlashAttribute("message", "관리자만 접근 가능합니다!");
@@ -210,7 +236,14 @@ public class MainAdminController {
 		return goPage;
 	}
 	
-	// 기능 수정 화면
+	/**
+	 * 기능 수정 화면
+	 * @param funcName
+	 * @param model
+	 * @param session
+	 * @param ra
+	 * @return
+	 */
 	@RequestMapping(value = "/mypageadmin/funcupdate", method = RequestMethod.GET)
 	public String funcUpdateForm(String funcName, Model model,
 			HttpSession session, RedirectAttributes ra) {
@@ -231,7 +264,14 @@ public class MainAdminController {
 		return goPage;
 	}
 	
-	// 기능 수정
+	/**
+	 * 기능 수정(update)
+	 * @param req
+	 * @param ra
+	 * @param funcInfoVO
+	 * @param model
+	 * @return
+	 */
 	@RequestMapping(value = "/mypageadmin/funcupdate", method = RequestMethod.POST)
 	public String funcUpdate(
 			HttpServletRequest req,
@@ -252,14 +292,21 @@ public class MainAdminController {
 		return goPage;
 	}
 	
-	// 기능 삭제
+	/**
+	 * 기능 삭제(delete)
+	 * @param req
+	 * @param ra
+	 * @param funcName
+	 * @param model
+	 * @return
+	 */
 	@RequestMapping(value = "/mypageadmin/funcdelete", method = RequestMethod.POST)
 	public String funcDelete(HttpServletRequest req, RedirectAttributes ra, String funcName, Model model) {
 		log.info("funcDelete() 실행~~~~~");
 
 		String goPage = "";
 		ServiceResult result = mainAdminService.deleteFunc(req, funcName);
-		log.info("삭제값확인!!!!!!!!!!!!!!@@@@@@@@@@@@@@@@@" + funcName);
+		log.info("기능 삭제값 확인 : {}", funcName);
 		if (result.equals(ServiceResult.OK)) {
 			ra.addFlashAttribute("message", "삭제가 완료되었습니다!");
 			goPage = "redirect:/mypageadmin/funclist";
@@ -272,7 +319,13 @@ public class MainAdminController {
 		return goPage;
 	}
 
-	// 레벨 리스트 화면(관리자)
+	/**
+	 * 레벨 리스트 화면(관리자)
+	 * @param model
+	 * @param session
+	 * @param ra
+	 * @return
+	 */
 	@RequestMapping(value = "/mypageadmin/levellist", method = RequestMethod.GET)
 	public String levelList(Model model, HttpSession session, RedirectAttributes ra) {
 		log.info("levelList() 실행~~~~~");
@@ -291,7 +344,12 @@ public class MainAdminController {
 		return goPage;
 	}
 
-	// 레벨 추가 양식
+	/**
+	 * 레벨 추가 양식(form)
+	 * @param session
+	 * @param ra
+	 * @return
+	 */
 	@RequestMapping(value = "/mypageadmin/levelform", method = RequestMethod.GET)
 	public String levelInsertForm(HttpSession session, RedirectAttributes ra) {
 		log.info("levelInsertForm() 실행~~~~~");
@@ -309,7 +367,15 @@ public class MainAdminController {
 		return goPage;
 	}
 
-	// 레벨 추가
+	/**
+	 * 레벨 추가(insert)
+	 * @param req
+	 * @param session
+	 * @param ra
+	 * @param levelInfoVO
+	 * @param model
+	 * @return
+	 */
 	@RequestMapping(value = "/mypageadmin/levelinsert", method = RequestMethod.POST)
 	public String levelInsert(
 			HttpServletRequest req, 
@@ -321,19 +387,26 @@ public class MainAdminController {
 
 		ServiceResult result = mainAdminService.insertLevel(req, levelInfoVO);
 		if (result.equals(ServiceResult.OK)) {
-			ra.addFlashAttribute("message", "기능이 추가되었습니다!");
+			ra.addFlashAttribute("message", "레벨이 추가되었습니다!");
 			goPage = "redirect:/mypageadmin/leveldetail?levelName=" + levelInfoVO.getLevelName();
-			log.info("등록잘됨!!!!!!!!!!!!");
+			log.info("레벨 추가 성공!!!!!");
 		} else {
 			model.addAttribute("message", "서버오류입니다. 다시 시도해주세요!");
 			goPage = "mainhome/levelForm";
-			log.info("등록 서버오류~~~~~~~~~~~~~");
+			log.info("레벨 추가 서버오류!!!!!");
 
 		}
 		return goPage;
 	}
 	
-	// 레벨 상세보기
+	/**
+	 * 레벨 상세보기
+	 * @param levelName
+	 * @param model
+	 * @param session
+	 * @param ra
+	 * @return
+	 */
 	@RequestMapping(value = "/mypageadmin/leveldetail", method = RequestMethod.GET)
 	public String levelDetail(String levelName, Model model,
 			HttpSession session, RedirectAttributes ra) {
@@ -345,7 +418,7 @@ public class MainAdminController {
 		if(customer != null) {
 			LevelInfoVO levelInfoVO = mainAdminService.selectLevel(levelName);
 			model.addAttribute("levelInfo", levelInfoVO);
-			log.info("상세 값 확인!!!!!!" + levelName);
+			log.info("레벨 상세값 확인 : {}", levelName);
 			goPage = "mainhome/levelDetail";
 		}else {
 			ra.addFlashAttribute("message", "관리자만 접근 가능합니다!");
@@ -355,7 +428,14 @@ public class MainAdminController {
 		return goPage;
 	}
 	
-	// 레벨 수정 화면
+	/**
+	 * 레벨 수정 화면
+	 * @param levelName
+	 * @param model
+	 * @param session
+	 * @param ra
+	 * @return
+	 */
 	@RequestMapping(value = "/mypageadmin/levelupdate", method = RequestMethod.GET)
 	public String levelUpdateForm(String levelName, Model model,
 			HttpSession session, RedirectAttributes ra) {
@@ -376,7 +456,14 @@ public class MainAdminController {
 		return goPage;
 	}
 
-	// 레벨 수정
+	/**
+	 * 레벨 수정(update)
+	 * @param req
+	 * @param ra
+	 * @param levelInfoVO
+	 * @param model
+	 * @return
+	 */
 	@RequestMapping(value = "/mypageadmin/levelupdate", method = RequestMethod.POST)
 	public String levelUpdate(
 			HttpServletRequest req,
@@ -397,14 +484,21 @@ public class MainAdminController {
 		return goPage;
 	}
 	
-	// 레벨 삭제
+	/**
+	 * 레벨 삭제(delete)
+	 * @param req
+	 * @param ra
+	 * @param levelName
+	 * @param model
+	 * @return
+	 */
 	@RequestMapping(value = "/mypageadmin/leveldelete", method = RequestMethod.POST)
 	public String levelDelete(HttpServletRequest req, RedirectAttributes ra, String levelName, Model model) {
 		log.info("levelDelete() 실행~~~~~");
 
 		String goPage = "";
 		ServiceResult result = mainAdminService.deleteLevel(req, levelName);
-		log.info("삭제값확인!!!!!!!!!!!!!!@@@@@@@@@@@@@@@@@" + levelName);
+		log.info("삭제값확인  : {} ", levelName);
 		if (result.equals(ServiceResult.OK)) {
 			ra.addFlashAttribute("message", "삭제가 완료되었습니다!");
 			goPage = "redirect:/mypageadmin/levellist";
@@ -417,7 +511,16 @@ public class MainAdminController {
 		return goPage;
 	}
 	
-	// 구매 회원 관리(관리자)
+	/**
+	 * 구매 회원 목록(관리자)
+	 * @param currentPage
+	 * @param searchType
+	 * @param searchWord
+	 * @param model
+	 * @param session
+	 * @param ra
+	 * @return
+	 */
 	@RequestMapping(value = "/mypageadmin/purchaselist", method = RequestMethod.GET)
 	public String purchaseList(
 			@RequestParam(name="page", required = false, defaultValue = "1") int currentPage,
@@ -458,7 +561,14 @@ public class MainAdminController {
 		return goPage;
 	}
 	
-	// 구매 회원 관리 상세보기
+	/**
+	 * 구매 회원 상세보기
+	 * @param payCode
+	 * @param model
+	 * @param session
+	 * @param ra
+	 * @return
+	 */
 	@RequestMapping(value = "/mypageadmin/purchasedetail", method = RequestMethod.GET)
 	public String purchaseDetail(String payCode, Model model,
 			HttpSession session, RedirectAttributes ra) {
@@ -471,7 +581,7 @@ public class MainAdminController {
 			CustomerVO customerVO = mainAdminService.selectPayment(payCode);
 			model.addAttribute("customerVO", customerVO);
 			model.addAttribute("funcLevelList", customerVO.getPaymentVO().getFuncLevelList());
-			log.info("상세 값 확인!!!!!!" + payCode);
+			log.info("구매 회원 상세보기 값 확인 : {}", payCode);
 			goPage = "mainhome/purchaseManageDetail";
 		}else {
 			ra.addFlashAttribute("message", "관리자만 접근 가능합니다!");
@@ -480,7 +590,13 @@ public class MainAdminController {
 		return goPage;
 	}	
 	
-	// 통계내기
+	/**
+	 * 통계내기
+	 * @param model
+	 * @param session
+	 * @param ra
+	 * @return
+	 */
 	@RequestMapping(value = "/mypageadmin/statsadmin", method = RequestMethod.GET)
 	public String statsAdmin(Model model, HttpSession session, RedirectAttributes ra) {
 		log.info("statsAdmin() 실행~~~~~");
@@ -509,7 +625,11 @@ public class MainAdminController {
 	}
 	
 	
-	// 차트
+	/**
+	 * 가장 많이 선택 된 레벨 차트
+	 * @param model
+	 * @return
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/levelchart", method = RequestMethod.POST)
 	public String levelChart(Model model) {
@@ -517,11 +637,8 @@ public class MainAdminController {
 		
 		List<PaymentVO> list = mainAdminService.selectLevelName();
 		
-		
 		Gson gson = new Gson();
 		JsonArray jArray = new JsonArray();
-		
-//		DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
 		
 		Iterator<PaymentVO> it = list.iterator();
 		while(it.hasNext()) {
@@ -531,24 +648,26 @@ public class MainAdminController {
 			int cnt = paymentVO.getLevelCnt();
 			int ratio = paymentVO.getLevelRatio();
 			
-//			Date dt = paymentVO.getPayDate();
-//			String payDate = df.format(dt);
 			
 			object.addProperty("levelName", levelName);
 			object.addProperty("cnt", cnt);
 			object.addProperty("ratio", ratio);
-//			object.addProperty("payDate", payDate);
 			jArray.add(object);
 			
 		}
 		
 		String json = gson.toJson(jArray);
 		model.addAttribute("json", json);
-		log.info("json 변환!!!!!" + json);
+		log.info("json 변환 : {}", json);
 		
 		return json;
 	}
-		
+	
+	/**
+	 * 가장 많이 선택된 기능 차트
+	 * @param model
+	 * @return
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/funcchart", method = RequestMethod.POST)
 	public String funcChart(Model model) {
@@ -576,11 +695,16 @@ public class MainAdminController {
 		
 		String json = gson.toJson(jArray);
 		model.addAttribute("json", json);
-		log.info("json 변환!!!!!" + json);
+		log.info("json 변환 : {}", json);
 		
 		return json;
 	}
 	
+	/**
+	 * 매출 차트
+	 * @param model
+	 * @return
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/saleschart", method = RequestMethod.POST)
 	public String salesChart(Model model) {
@@ -608,11 +732,16 @@ public class MainAdminController {
 		
 		String json = gson.toJson(jArray);
 		model.addAttribute("json", json);
-		log.info("json 변환!!!!!" + json);
+		log.info("json 변환 : {}", json);
 		
 		return json;
 	}
 	
+	/**
+	 * 고객 회사의 인원 수 차트
+	 * @param model
+	 * @return
+	 */
 	@ResponseBody
 	@RequestMapping(value = "/cusempchart", method = RequestMethod.POST)
 	public String cusEmpChart(Model model) {
@@ -642,12 +771,21 @@ public class MainAdminController {
 		
 		String json = gson.toJson(jArray);
 		model.addAttribute("json", json);
-		log.info("json 변환!!!!!" + json);
+		log.info("json 변환 : {}", json);
 		
 		return json;
 	}
 	
-	// 판매페이지 문의게시판 리스트
+	/**
+	 * 판매페이지 문의게시판 리스트(관리자)
+	 * @param currentPage
+	 * @param searchType
+	 * @param searchWord
+	 * @param model
+	 * @param session
+	 * @param ra
+	 * @return
+	 */
 	@RequestMapping(value = "/mypageadmin/adminboard", method = RequestMethod.GET)
 	public String adminBoard(
 			@RequestParam(name="page", required = false, defaultValue = "1") int currentPage,

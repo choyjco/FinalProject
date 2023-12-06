@@ -58,38 +58,35 @@ public class PaymentController {
 	public void PaymentVerify(String imp_uid, String merchant_uid) throws Exception{
 
 		log.info("결제 성공");
-		log.info("imp_uid : " + imp_uid);
-		log.info("merchant_uid : " + merchant_uid);
+		log.info("imp_uid : {}", imp_uid);
+		log.info("merchant_uid : {}", merchant_uid);
 	}
 	
+	/**
+	 * 결제 성공
+	 * @param req
+	 * @param paymentVO
+	 * @return
+	 */
 	@PostMapping("/payment/succeed")
 	@ResponseBody
 	public Map<Object, Object> updateStatus(HttpServletRequest req, PaymentVO paymentVO){
 		
 		log.info("updateStatus() 실행~~~~~");
 		
-//		String imp_uid = req.getParameter("imp_uid");
-//		int order_no = Integer.parseInt(req.getParameter("merchant_uid"));
-//		String payCode = paymentVO.getPayCode();
-//		String payStatus = "Y";
-
 		Map<Object, Object> map = new HashMap<>();
 
-//		//주문번호, 결제고유번호, 결제상태를 인자로 넘겨준다
-//		int res = mainMapper.updateStatus(payCode, payStatus);
-//		if (res > 0) {
-//			map.put("cnt", "Y");
-//		}else {
-//			map.put("cnt", "N");
-//		}
-		
-//		//장바구니 지우기
-//		HttpSession session = req.getSession();
-//		session.removeAttribute("cart");
-		
 		return map;
 	}
 	
+	/**
+	 * 결제 후 화면
+	 * @param model
+	 * @param req
+	 * @param session
+	 * @return
+	 * @throws Exception
+	 */
 	@RequestMapping(value = "/payment/order", method = RequestMethod.GET)
 	public String paymentOrder(
 			Model model,
@@ -106,27 +103,6 @@ public class PaymentController {
 			
 			mainService.sendMail(req, customer);
 			
-//			MailHandler sendMail = new MailHandler(mailSender);
-//			sendMail.setSubject("WSI 시스템 구매 메일입니다!");
-//			sendMail.setText(
-//					"<h3>" + customer.getCusName() + "님! WSI 시스템을 구매해주셔서 감사합니다!</h3>" + 
-//					"<br>시스템을 이용해보세요!" + 
-//					"<br><a href='http://localhost/home/feed' target='_blank'>시스템으로 바로가기</a>");
-//			sendMail.setFrom("teamwsi404@gmail.com", "WSI 관리자");
-//			sendMail.setTo(customer.getCusEmail());
-//			sendMail.send();
-//			
-			
-//			PaymentVO paymentVO = mainService.selectPayCode(customer.getCusRnum());
-//			log.info("결제 이후 customer 값!!!!!!!!!!!" + customerVO );
-//			model.addAttribute("customerVO", customerVO);
-			
-//			ServiceResult result = mainService.updatePayStatus(req, paymentVO);
-//			String payCode = paymentVO.getPayCode();
-//			log.info("payCode 값!!!!!!!!!!" + payCode);
-			
-//			CustomerVO customerVO = mainService.selectCustomerEmail(cusRnum);
-//			model.addAttribute("customerVO", customerVO);
 			goPage = "mainhome/paymentOrder";
 		}else {
 			
